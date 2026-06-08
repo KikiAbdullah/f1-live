@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Live Replay</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+    <div id="loading-overlay">
+        <div class="loader">Loading Race Data...</div>
+    </div>
+
+    <header class="app-header">
+        <div class="session-info">
+            <div class="session-title" id="track-name">Loading Track...</div>
+            <div class="session-details" id="session-date">---</div>
+        </div>
+        <div class="current-lap-box">
+            LAP <span id="current-lap">1</span> / <span id="total-laps">--</span>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <section class="panel">
+                <div class="panel-header">Select Session</div>
+                <div id="session-selector"></div>
+            </section>
+
+            <section class="panel" style="flex: 1;">
+                <div class="panel-header">Leaderboard</div>
+                <div id="leaderboard"></div>
+            </section>
+        </aside>
+        
+        <main class="main-content">
+            <section class="panel map-panel">
+                <div class="panel-header">Live Track Map</div>
+                <canvas id="track-map"></canvas>
+            </section>
+            
+            <section class="panel feed-panel">
+                <div class="panel-header">Race Control Feed</div>
+                <div id="race-feed" class="feed-list"></div>
+            </section>
+            
+            <section class="panel feed-panel">
+                <div class="panel-header">Pit Stops</div>
+                <div id="pit-stops-feed" class="feed-list"></div>
+            </section>
+
+            <section class="panel weather-panel">
+                <div class="panel-header">Weather</div>
+                <div id="weather-display"></div>
+            </section>
+            
+            <section class="panel telemetry-panel" style="flex:2;">
+                <div class="panel-header">Telemetry - <span id="telemetry-driver-name">No Driver Selected</span></div>
+                <div style="flex: 1; position: relative;">
+                    <canvas id="telemetry-chart"></canvas>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer class="controls-container">
+        <div id="controls"></div>
+    </footer>
+
+    <script type="module">
+        import { replayEngine } from './assets/core/replay-engine.js';
+        import { Leaderboard } from './assets/ui/leaderboard.js';
+        import { TrackMap } from './assets/ui/trackmap.js';
+        import { Controls } from './assets/ui/controls.js';
+        import { RaceFeed } from './assets/ui/race-feed.js';
+        import { PitStopFeed } from './assets/ui/pit-stops.js'; // Import PitStopFeed
+        import { WeatherDisplay } from './assets/ui/weather.js'; // Import WeatherDisplay
+        import { TelemetryChart } from './assets/ui/telemetry.js';
+        import { SessionSelector } from './assets/ui/session-selector.js'; 
+        import { eventBus } from './assets/core/event-bus.js';
+        import { store } from './assets/core/store.js'; // Import store here
+
+
+        // Initialize UI
+        const leaderboard = new Leaderboard('leaderboard');
+        const trackMap = new TrackMap('track-map');
+        const controls = new Controls('controls');
+        const raceFeed = new RaceFeed('race-feed');
+        const telemetryChart = new TelemetryChart('telemetry-chart');
+        const sessionSelector = new SessionSelector('session-selector');
+        const pitStopFeed = new PitStopFeed('pit-stops-feed');
+        const weatherDisplay = new WeatherDisplay('weather-display');
+
+        eventBus.on('driver:selected', (driverNumber) => {
+            const driver = store.drivers.find(d => String(d.driver_number) === String(driverNumber));
+            document.getElementById('telemetry-driver-name').textContent = driver ? driver.full_name : 'No Driver Selected';
+        });
+
+        const loadingOverlay = document.getElementById('loading-overlay');
+        eventBus.on('loading:start', (msg) => {
+            loadingOverlay.classList.remove('hidden');
+            loadingOverlay.querySelector('.loader').textContent = msg;
+        });
+        eventBus.on('loading:success', () => loadingOverlay.classList.add('hidden'));
+
+        // Initial session loading handled by SessionSelector
+        // replayEngine.loadSession(9472).then(() => {
+        //     // Initial setup on successful load
+        // });
+
+        eventBus.on('session:load', async (sessionKey) => {
+            console.log(`Loading new session with key: ${sessionKey}`);
+            await replayEngine.loadSession(sessionKey);
+            // After loading, update session info in header
+            if (store.session) {
+                document.getElementById('track-name').textContent = store.session.meeting_name;
+                document.getElementById('session-date').textContent = 
+                    `${new Date(store.session.date_start).getFullYear()} • ${store.session.circuit_short_name || 'Circuit'}`;
+                
+                const maxLap = Math.max(...store.raceData.laps.map(l => l.lap_number));
+                document.getElementById('total-laps').textContent = maxLap;
+            } else {
+                // Fallback for initial load if store.session not set by selector yet
+                document.getElementById('track-name').textContent = "Bahrain Grand Prix";
+                document.getElementById('session-date').textContent = "2024 • Sakhir International Circuit";
+                const maxLap = Math.max(...store.raceData.laps.map(l => l.lap_number));
+                document.getElementById('total-laps').textContent = maxLap;
+            }
+        });
+
+        // Trigger initial session load with a default if no session is selected yet.
+        // Or wait for user to select from UI.
+        // For now, let's keep the automatic load for first boot.
+        replayEngine.loadSession(9472).then(() => {
+            if (store.session) { // This might be null if no session selected yet from UI
+                document.getElementById('track-name').textContent = store.session.meeting_name;
+                document.getElementById('session-date').textContent = 
+                    `${new Date(store.session.date_start).getFullYear()} • ${store.session.circuit_short_name || 'Circuit'}`;
+                const maxLap = Math.max(...store.raceData.laps.map(l => l.lap_number));
+                document.getElementById('total-laps').textContent = maxLap;
+            } else {
+                 // Fallback if initial load has no store.session
+                document.getElementById('track-name').textContent = "Bahrain Grand Prix";
+                document.getElementById('session-date').textContent = "2024 • Sakhir International Circuit";
+                const maxLap = Math.max(...store.raceData.laps.map(l => l.lap_number));
+                document.getElementById('total-laps').textContent = maxLap;
+            }
+        });
+
+        window.onresize = () => trackMap.resize();
+    </script>
+</body>
+</html>
