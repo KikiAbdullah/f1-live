@@ -4,10 +4,79 @@ import { eventBus } from "./event-bus.js";
 import { timeline } from "./timeline.js";
 
 export const replayEngine = {
+  resolveSessionWindow(sessionData, laps, raceControl, weather) {
+    const parse = (value) => {
+      const parsed = value ? new Date(value).getTime() : NaN;
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    const rawStart = parse(sessionData?.date_start);
+    const rawEnd = parse(sessionData?.date_end);
+    const dataTimes = [];
+
+    const collect = (rows, keys = ["date", "date_start", "date_end"]) => {
+      (rows || []).forEach((row) => {
+        for (const key of keys) {
+          const timestamp = parse(row?.[key]);
+          if (timestamp !== null) dataTimes.push(timestamp);
+        }
+      });
+    };
+
+    collect(laps, ["date_start", "date_end"]);
+    collect(raceControl, ["date"]);
+    collect(weather, ["date"]);
+
+    const minData = dataTimes.length > 0 ? Math.min(...dataTimes) : null;
+    const maxData = dataTimes.length > 0 ? Math.max(...dataTimes) : null;
+
+    const isReasonableWindow = (start, end) =>
+      Number.isFinite(start) &&
+      Number.isFinite(end) &&
+      end > start &&
+      end - start <= 12 * 60 * 60 * 1000;
+
+    let startTime = null;
+    let endTime = null;
+
+    if (isReasonableWindow(rawStart, rawEnd)) {
+      startTime = rawStart;
+      endTime = rawEnd;
+    }
+
+    if (minData !== null && maxData !== null) {
+      if (!isReasonableWindow(startTime, endTime)) {
+        startTime = minData;
+        endTime = maxData;
+      } else {
+        startTime = Math.min(startTime, minData);
+        endTime = Math.max(endTime, maxData);
+      }
+    }
+
+    if (!isReasonableWindow(startTime, endTime)) {
+      return { startTime: null, endTime: null, duration: 0 };
+    }
+
+    return {
+      startTime,
+      endTime,
+      duration: Math.max(0, endTime - startTime),
+    };
+  },
+
   async loadSession(sessionKey) {
     eventBus.emit("loading:start", "Fetching session data...");
+    store.reset();
 
     try {
+      // 0. Fetch Session details to get circuit_key
+      const sessionData = await F1Api.fetchSession(sessionKey);
+      if (sessionData && sessionData.length > 0) {
+        store.session = sessionData[0];
+      }
+
+      // 1. Ambil data awal esensial
       const drivers = await F1Api.fetchDrivers(sessionKey);
       store.drivers = drivers;
 
@@ -16,29 +85,42 @@ export const replayEngine = {
 
       console.log("Initial laps loaded:", laps.length);
 
-      if (laps.length > 0) {
-        const startTimes = laps
-          .map((l) => (l.date_start ? new Date(l.date_start).getTime() : null))
-          .filter((t) => t !== null && !isNaN(t));
-        const endTimes = laps
-          .map((l) => (l.date_end ? new Date(l.date_end).getTime() : null))
-          .filter((t) => t !== null && !isNaN(t));
-
-        if (startTimes.length > 0)
-          store.playback.startTime = Math.min(...startTimes);
-        if (endTimes.length > 0) store.playback.endTime = Math.max(...endTimes);
-      }
-
+      // 2. OPTIMASI GLOBAL: Tarik data global (termasuk Stints & Pit) sekaligus secara paralel
+      // Karena stints dan pit mengembalikan data seluruh driver, panggil di luar loop driver!
       const globalItems = [
         { key: "weather", fn: () => F1Api.fetchWeather(sessionKey) },
         { key: "raceControl", fn: () => F1Api.fetchRaceControl(sessionKey) },
+        { key: "stints", fn: () => F1Api.fetchStints(sessionKey) },
+        { key: "pit", fn: () => F1Api.fetchPit(sessionKey) },
       ];
 
-      for (const item of globalItems) {
-        eventBus.emit("loading:start", `Fetching ${item.key}...`);
-        store.raceData[item.key] = await item.fn();
+      eventBus.emit(
+        "loading:start",
+        "Fetching global session data (Weather, Race Control, Stints, Pits)..."
+      );
+      const globalResults = await Promise.all(
+        globalItems.map((item) => item.fn())
+      );
+
+      // Petakan hasil global ke store
+      globalItems.forEach((item, index) => {
+        store.raceData[item.key] = globalResults[index];
+      });
+
+      // Fetch Circuit Info jika tersedia
+      if (store.session && store.session.circuit_key) {
+        try {
+          const year = new Date(store.session.date_start).getFullYear();
+          store.raceData.circuitInfo = await F1Api.fetchCircuitInfo(
+            store.session.circuit_key,
+            year
+          );
+        } catch (e) {
+          console.warn("Failed to fetch circuit info:", e);
+        }
       }
 
+      // 3. Siapkan struktur data driver di store
       store.driverData = {};
       store.drivers.forEach((driver) => {
         store.driverData[driver.driver_number] = {
@@ -50,43 +132,65 @@ export const replayEngine = {
         };
       });
 
+      // Distribusikan data global Stints dan Pit yang tadi di-download ke masing-masing pembalap
+      store.raceData.stints.forEach((stint) => {
+        if (store.driverData[stint.driver_number])
+          store.driverData[stint.driver_number].stints.push(stint);
+      });
+      store.raceData.pit.forEach((p) => {
+        if (store.driverData[p.driver_number])
+          store.driverData[p.driver_number].pit.push(p);
+      });
+
+      // 4. OPTIMASI DRIVER DATA: Sekarang hanya men-download data spesifik per individu (Positions, Locations, Telemetry)
       const driverDataTypes = [
         { name: "Positions", fn: F1Api.fetchPositions, storeKey: "positions" },
         { name: "Locations", fn: F1Api.fetchLocations, storeKey: "locations" },
         { name: "Telemetry", fn: F1Api.fetchCarData, storeKey: "telemetry" },
-        { name: "Stints", fn: F1Api.fetchStints, storeKey: "stints" },
-        { name: "Pit", fn: F1Api.fetchPit, storeKey: "pit" },
       ];
 
       const totalDrivers = drivers.length;
       const totalTasks = totalDrivers * driverDataTypes.length;
       let completedTasks = 0;
 
-      for (const driver of drivers) {
+      // Jalankan request data kritikal pembalap secara paralel
+      const allDriverTasks = drivers.map(async (driver) => {
         const driverFetches = driverDataTypes.map(async (type) => {
-          let data = await type.fn(sessionKey, driver.driver_number);
-          data = data
-            .map((entry) => ({
-              ...entry,
-              timestamp: entry.date ? new Date(entry.date).getTime() : null,
-            }))
-            .filter((e) => e.timestamp !== null);
+          try {
+            let data = await type.fn(sessionKey, driver.driver_number);
 
-          store.setRaceData(type.storeKey, data, driver.driver_number);
-          completedTasks++;
-          const progress = Math.round((completedTasks / totalTasks) * 100);
-          eventBus.emit(
-            "loading:start",
-            `[${progress}%] Downloading ${type.name}: ${driver.name_acronym}`
-          );
-          return data;
+            // Langsung inject timestamp di sini agar tidak looping dua kali nanti
+            data = data
+              .map((entry) => ({
+                ...entry,
+                timestamp: entry.date ? new Date(entry.date).getTime() : null,
+              }))
+              .filter((e) => e.timestamp !== null);
+
+            store.setRaceData(type.storeKey, data, driver.driver_number);
+            completedTasks++;
+
+            const progress = Math.round((completedTasks / totalTasks) * 100);
+            eventBus.emit(
+              "loading:start",
+              `[${progress}%] Downloading ${type.name}: ${driver.name_acronym}`
+            );
+          } catch (e) {
+            console.error(
+              `Failed to fetch ${type.name} for ${driver.driver_number}:`,
+              e
+            );
+          }
         });
-        await Promise.all(driverFetches);
-      }
+        return Promise.all(driverFetches);
+      });
 
-      eventBus.emit("loading:start", `[100%] Finalizing data...`);
+      await Promise.all(allDriverTasks);
 
-      ["laps", "weather", "raceControl"].forEach((key) => {
+      eventBus.emit("loading:start", `[100%] Finalizing & Sorting data...`);
+
+      // 5. Normalisasi timestamp untuk data global sisanya
+      ["laps", "weather", "raceControl", "stints", "pit"].forEach((key) => {
         store.raceData[key] = store.raceData[key]
           .map((entry) => ({
             ...entry,
@@ -98,6 +202,7 @@ export const replayEngine = {
           .filter((e) => e.timestamp !== null);
       });
 
+      // 6. Sorting data secara efisien
       const sortFn = (a, b) => a.timestamp - b.timestamp;
 
       for (const driverNumber in store.driverData) {
@@ -114,6 +219,22 @@ export const replayEngine = {
       store.raceData.laps.sort(sortFn);
       store.raceData.weather.sort(sortFn);
       store.raceData.raceControl.sort(sortFn);
+      store.raceData.stints.sort(sortFn);
+      store.raceData.pit.sort(sortFn);
+
+      // 7. Bangun window waktu sesi yang ketat agar tidak melebar jadi 24 jam
+      const sessionWindow = this.resolveSessionWindow(
+        store.session,
+        store.raceData.laps,
+        store.raceData.raceControl,
+        store.raceData.weather
+      );
+
+      if (sessionWindow.startTime && sessionWindow.endTime) {
+        store.playback.startTime = sessionWindow.startTime;
+        store.playback.endTime = sessionWindow.endTime;
+        store.playback.duration = sessionWindow.duration;
+      }
 
       if (
         !store.playback.startTime ||
@@ -126,28 +247,26 @@ export const replayEngine = {
         let minTime = Infinity;
         let maxTime = -Infinity;
 
-        const processArray = (arr) => {
-          if (!arr) return; // FIX: Mencegah error jika array undefined
-          for (let i = 0; i < arr.length; i++) {
-            if (arr[i] && arr[i].date) {
-              const t = new Date(arr[i].date).getTime();
-              if (!isNaN(t)) {
-                if (t < minTime) minTime = t;
-                if (t > maxTime) maxTime = t;
-              }
-            }
-          }
-        };
-
-        // FIX: Looping ke dalam driverData karena positions dan locations sekarang terikat ke driver
         for (const driverNum in store.driverData) {
-          processArray(store.driverData[driverNum].positions);
-          processArray(store.driverData[driverNum].locations);
+          const pos = store.driverData[driverNum].positions;
+          const loc = store.driverData[driverNum].locations;
+
+          if (pos.length > 0) {
+            if (pos[0].timestamp < minTime) minTime = pos[0].timestamp;
+            if (pos[pos.length - 1].timestamp > maxTime)
+              maxTime = pos[pos.length - 1].timestamp;
+          }
+          if (loc.length > 0) {
+            if (loc[0].timestamp < minTime) minTime = loc[0].timestamp;
+            if (loc[loc.length - 1].timestamp > maxTime)
+              maxTime = loc[loc.length - 1].timestamp;
+          }
         }
 
         if (minTime !== Infinity && maxTime !== -Infinity) {
           store.playback.startTime = minTime;
           store.playback.endTime = maxTime;
+          store.playback.duration = maxTime - minTime;
         }
       }
 
@@ -157,25 +276,12 @@ export const replayEngine = {
         );
       } else {
         store.playback.currentTime = 0;
-
-        try {
-          if (
-            isFinite(store.playback.startTime) &&
-            isFinite(store.playback.endTime)
-          ) {
-            console.log(
-              "Session range confirmed:",
-              new Date(store.playback.startTime).toISOString(),
-              "to",
-              new Date(store.playback.endTime).toISOString(),
-              "Duration:",
-              (store.playback.endTime - store.playback.startTime) / 1000,
-              "seconds"
-            );
-          }
-        } catch (e) {
-          console.error("Error formatting session range for log:", e);
-        }
+        console.log(
+          "Session range confirmed:",
+          new Date(store.playback.startTime).toISOString(),
+          "to",
+          new Date(store.playback.endTime).toISOString()
+        );
       }
 
       eventBus.emit("loading:success");

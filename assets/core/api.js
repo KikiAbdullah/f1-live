@@ -3,12 +3,13 @@ import { db } from "./db.js";
 const API_BASE_URL = "https://api.openf1.org/v1";
 
 class RequestQueue {
-  constructor(concurrency = 1) {
+  constructor(concurrency = 3) {
+    // Dinaikkan ke 3 untuk paralelisme moderat
     this.concurrency = concurrency;
     this.running = 0;
     this.queue = [];
     this.lastRequestTime = 0;
-    this.minInterval = 500;
+    this.minInterval = 150; // Diturunkan ke 150ms agar jauh lebih cepat
   }
 
   async add(fn) {
@@ -24,6 +25,7 @@ class RequestQueue {
     const now = Date.now();
     const timeSinceLast = now - this.lastRequestTime;
 
+    // Jeda dinamis yang lebih pendek
     if (timeSinceLast < this.minInterval) {
       setTimeout(() => this.next(), this.minInterval - timeSinceLast);
       return;
@@ -45,35 +47,49 @@ class RequestQueue {
   }
 }
 
-const queue = new RequestQueue(1);
+// Menggunakan concurrency 3 untuk mempercepat request paralel (misal download data per driver sekaligus)
+const queue = new RequestQueue(3);
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
-async function fetchWithRetry(url, options = {}, retries = 10, backoff = 5000) {
+async function fetchWithRetry(url, options = {}, retries = 10, backoff = 3000) {
   const cached = await db.get(url);
   if (cached) {
     return cached;
   }
 
+  // Menambahkan header kompresi agar ukuran data yang di-download mengecil drastis (mempercepat download data besar)
+  const defaultOptions = {
+    ...options,
+    headers: {
+      "Accept-Encoding": "gzip, deflate, br",
+      ...(options.headers || {}),
+    },
+  };
+
   return queue.add(async () => {
     let currentRetries = retries;
     let currentBackoff = backoff;
 
-    // Menggunakan loop untuk retry agar tidak menyebabkan queue deadlock
     while (true) {
       try {
-        const response = await fetch(url, options);
+        const response = await fetch(url, defaultOptions);
 
         if (response.status === 429) {
           if (currentRetries > 0) {
             const retryAfter = response.headers.get("Retry-After");
+            // Jika server ngasih tau harus nunggu berapa lama, ikuti. Jika tidak, gunakan backoff dinamis
             const waitTime = retryAfter
               ? parseInt(retryAfter) * 1000
               : currentBackoff;
-            console.warn(`429 error, waiting ${waitTime}ms for ${url}`);
+
+            console.warn(
+              `[429 Rate Limit] Menunggu ${waitTime}ms untuk: ${url}`
+            );
             await delay(waitTime);
+
             currentRetries--;
-            currentBackoff *= 1.5;
-            continue; // Coba lagi di loop yang sama
+            currentBackoff *= 2; // Eksponensial backoff diperlebar jika terkena hit limit
+            continue;
           }
         }
 
@@ -84,8 +100,10 @@ async function fetchWithRetry(url, options = {}, retries = 10, backoff = 5000) {
         await db.set(url, data);
         return data;
       } catch (error) {
-        // Menangani error jaringan
         if (currentRetries > 0) {
+          console.warn(
+            `[Network Error] Gagal koneksi, coba lagi dalam ${currentBackoff}ms. Sisa retry: ${currentRetries}`
+          );
           await delay(currentBackoff);
           currentRetries--;
           currentBackoff *= 2;
@@ -104,6 +122,9 @@ export const F1Api = {
       url += `&session_name=${sessionName}`;
     }
     return fetchWithRetry(url);
+  },
+  async fetchSession(sessionKey) {
+    return fetchWithRetry(`${API_BASE_URL}/sessions?session_key=${sessionKey}`);
   },
   async fetchDrivers(sessionKey) {
     return fetchWithRetry(`${API_BASE_URL}/drivers?session_key=${sessionKey}`);
@@ -139,5 +160,9 @@ export const F1Api = {
   },
   async fetchStints(sessionKey) {
     return fetchWithRetry(`${API_BASE_URL}/stints?session_key=${sessionKey}`);
+  },
+  async fetchCircuitInfo(circuitKey, year) {
+    const url = `https://api.multiviewer.app/api/v1/circuits/${circuitKey}/${year}`;
+    return fetchWithRetry(url);
   },
 };

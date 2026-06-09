@@ -19,6 +19,7 @@ export class TrackMap {
     this.scaleY = 1;
     this.offsetX = 0;
     this.offsetY = 0;
+    this.zoom = 1;
 
     this.trackCanvas = null;
     this.resizeObserver = null;
@@ -136,12 +137,14 @@ export class TrackMap {
 
   // Fungsi helper transformasi koordinat sirkuit F1 ke pixel koordinat Canvas
   transformX(x) {
-    return this.offsetX + (x - this.bounds.minX) * this.scaleX;
+    const baseX = this.offsetX + (x - this.bounds.minX) * this.scaleX;
+    return this.canvas.width / 2 + (baseX - this.canvas.width / 2) * this.zoom;
   }
 
   transformY(y) {
     // Balik sumbu Y karena koordinat Cartesian F1 berbanding terbalik dengan ordinat pixel HTML5 Canvas
-    return this.offsetY + (this.bounds.maxY - y) * this.scaleY;
+    const baseY = this.offsetY + (this.bounds.maxY - y) * this.scaleY;
+    return this.canvas.height / 2 + (baseY - this.canvas.height / 2) * this.zoom;
   }
 
   preRenderTrack() {
@@ -166,37 +169,231 @@ export class TrackMap {
 
     if (!trackPoints || trackPoints.length === 0) return;
 
-    tCtx.beginPath();
-    tCtx.strokeStyle = "#38383f"; // Warna abu aspal gelap lintasan
-    tCtx.lineWidth = 10;
-    tCtx.lineCap = "round";
-    tCtx.lineJoin = "round";
+    this.drawTrackSegments(tCtx, trackPoints);
 
-    tCtx.moveTo(
-      this.transformX(trackPoints[0].x),
-      this.transformY(trackPoints[0].y)
-    );
-    for (let i = 1; i < trackPoints.length; i++) {
-      tCtx.lineTo(
-        this.transformX(trackPoints[i].x),
-        this.transformY(trackPoints[i].y)
-      );
-    }
-    tCtx.stroke();
+    // Render Circuit Metadata: Corners, Sectors, and DRS Zones
+    this.renderCircuitMetadata(tCtx);
 
-    // Menggambar Garis Start / Finish (Silang Bendera)
+    // Menggambar Garis Start / Finish (Checkered Pattern)
     const startPoint = trackPoints[0];
     const sx = this.transformX(startPoint.x);
     const sy = this.transformY(startPoint.y);
 
+    // Find direction for finish line orientation
+    const nextPt = trackPoints[1];
+    const dx = this.transformX(nextPt.x) - sx;
+    const dy = this.transformY(nextPt.y) - sy;
+    const angle = Math.atan2(dy, dx) + Math.PI / 2;
+
+    tCtx.save();
+    tCtx.translate(sx, sy);
+    tCtx.rotate(angle);
+
+    // Draw Checkered Line
+    const boxSize = 4;
+    for (let row = -1; row <= 1; row++) {
+      for (let col = -2; col <= 2; col++) {
+        tCtx.fillStyle = (row + col) % 2 === 0 ? "#ffffff" : "#000000";
+        tCtx.fillRect(col * boxSize, row * boxSize, boxSize, boxSize);
+      }
+    }
+    
+    // Label FINISH
+    tCtx.rotate(-angle);
+    tCtx.fillStyle = "#ffffff";
+    tCtx.font = "bold 10px sans-serif";
+    tCtx.textAlign = "center";
+    tCtx.fillText("START / FINISH", 0, -15);
+    tCtx.restore();
+  }
+
+  drawTrackSegments(tCtx, trackPoints) {
+    const sectorCount = 3;
+    const totalSegments = Math.max(trackPoints.length - 1, 1);
+
+    this.strokePath(tCtx, trackPoints, 0, totalSegments, 18, "#0a0a0d");
+    this.strokePath(tCtx, trackPoints, 0, totalSegments, 12, "#37373e");
+    this.strokePath(tCtx, trackPoints, 0, totalSegments, 6, "#f5e100");
+
+    for (let segmentIndex = 0; segmentIndex < sectorCount; segmentIndex++) {
+      const startIndex = Math.floor((segmentIndex * totalSegments) / sectorCount);
+      const endIndex = Math.floor(((segmentIndex + 1) * totalSegments) / sectorCount);
+      this.strokePath(tCtx, trackPoints, startIndex, endIndex, 2, "rgba(255, 255, 255, 0.16)");
+    }
+
+    this.drawPitLane(tCtx);
+  }
+
+  strokePath(tCtx, points, startIndex, endIndex, width, color) {
+    if (!points || points.length < 2) return;
+    const start = Math.max(0, Math.min(startIndex, points.length - 1));
+    const end = Math.max(start + 1, Math.min(endIndex + 1, points.length));
+
     tCtx.beginPath();
-    tCtx.strokeStyle = "#ffffff";
-    tCtx.lineWidth = 3;
-    tCtx.moveTo(sx - 10, sy - 10);
-    tCtx.lineTo(sx + 10, sy + 10);
-    tCtx.moveTo(sx + 10, sy - 10);
-    tCtx.lineTo(sx - 10, sy + 10);
+    tCtx.strokeStyle = color;
+    tCtx.lineWidth = width;
+    tCtx.lineCap = "round";
+    tCtx.lineJoin = "round";
+    tCtx.moveTo(this.transformX(points[start].x), this.transformY(points[start].y));
+    for (let i = start + 1; i < end; i++) {
+      tCtx.lineTo(this.transformX(points[i].x), this.transformY(points[i].y));
+    }
     tCtx.stroke();
+  }
+
+  drawPitLane(tCtx) {
+    const info = store.raceData?.circuitInfo;
+    if (!info) return;
+
+    const pitLaneCandidates = [
+      info.pitLane,
+      info.pit_lane,
+      info.pitLanePoints,
+      info.pitLaneCoordinates,
+      info.pitEntry,
+      info.pitExit,
+    ].filter(Boolean);
+
+    if (pitLaneCandidates.length === 0) return;
+
+    const candidate = pitLaneCandidates[0];
+    const points = Array.isArray(candidate) ? candidate : candidate.points || candidate.coordinates || [];
+    if (!points || points.length < 2) return;
+
+    tCtx.save();
+    tCtx.beginPath();
+    tCtx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+    tCtx.lineWidth = 6;
+    tCtx.setLineDash([8, 8]);
+    tCtx.lineCap = "round";
+    tCtx.lineJoin = "round";
+    tCtx.moveTo(this.transformX(points[0].x), this.transformY(points[0].y));
+    for (let i = 1; i < points.length; i++) {
+      tCtx.lineTo(this.transformX(points[i].x), this.transformY(points[i].y));
+    }
+    tCtx.stroke();
+    tCtx.restore();
+  }
+
+  renderCircuitMetadata(tCtx) {
+    const info = store.raceData?.circuitInfo;
+    if (!info) return;
+
+    // 1. Render Sectors (S1, S2, S3)
+    // Sectors are usually at specific marshal sectors
+    const sectorLabels = { 1: "SECTOR 1", 2: "SECTOR 2", 3: "SECTOR 3" };
+    const sectorsDrawn = new Set();
+
+    if (info.marshalSectors) {
+      info.marshalSectors.forEach((ms) => {
+        const x = this.transformX(ms.trackPosition.x);
+        const y = this.transformY(ms.trackPosition.y);
+
+        // Simple heuristic: Draw sector label at the start of each sector if possible
+        // or just draw the sector boundary line
+
+        // Let's draw sector numbers if they exist in the metadata
+        if (ms.sector && !sectorsDrawn.has(ms.sector)) {
+          tCtx.fillStyle = "rgba(255, 255, 255, 0.8)";
+          tCtx.font = "bold 12px sans-serif";
+          tCtx.textAlign = "center";
+
+          // Add Background for sector label
+          const label = sectorLabels[ms.sector] || `S${ms.sector}`;
+          const metrics = tCtx.measureText(label);
+          const padding = 4;
+
+          tCtx.fillStyle = "rgba(0, 0, 0, 0.6)";
+          tCtx.fillRect(
+            x - metrics.width / 2 - padding,
+            y + 15 - padding,
+            metrics.width + padding * 2,
+            12 + padding * 2
+          );
+
+          tCtx.fillStyle = "#ffffff";
+          tCtx.fillText(label, x, y + 27);
+          sectorsDrawn.add(ms.sector);
+
+          // Draw a line across the track at sector boundary
+          tCtx.beginPath();
+          tCtx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+          tCtx.lineWidth = 2;
+          tCtx.setLineDash([5, 5]);
+          tCtx.moveTo(x - 15, y - 15);
+          tCtx.lineTo(x + 15, y + 15);
+          tCtx.stroke();
+          tCtx.setLineDash([]); // Reset dash
+        }
+      });
+    }
+
+    if (info.pitLane || info.pit_lane || info.pitLanePoints || info.pitEntry || info.pitExit) {
+      const pitLabelX = this.canvas.width - 140;
+      const pitLabelY = this.canvas.height - 24;
+      tCtx.fillStyle = "rgba(0, 0, 0, 0.55)";
+      tCtx.fillRect(pitLabelX - 8, pitLabelY - 16, 130, 22);
+      tCtx.fillStyle = "#ffffff";
+      tCtx.font = "bold 10px sans-serif";
+      tCtx.textAlign = "left";
+      tCtx.fillText("PIT LANE HIGHLIGHTED", pitLabelX, pitLabelY);
+    }
+
+    // 2. Render Corners
+    if (info.corners) {
+      info.corners.forEach((corner) => {
+        const x = this.transformX(corner.trackPosition.x);
+        const y = this.transformY(corner.trackPosition.y);
+
+        // Draw Corner Circle
+        tCtx.beginPath();
+        tCtx.arc(x, y, 6, 0, Math.PI * 2);
+        tCtx.fillStyle = "#22222b";
+        tCtx.strokeStyle = "#ffffff";
+        tCtx.lineWidth = 1;
+        tCtx.fill();
+        tCtx.stroke();
+
+        // Draw Corner Number
+        tCtx.fillStyle = "#ffffff";
+        tCtx.font = "bold 9px sans-serif";
+        tCtx.textAlign = "center";
+        tCtx.textBaseline = "middle";
+        tCtx.fillText(corner.number, x, y);
+      });
+    }
+
+    // Render DRS Zones
+    if (info.marshalSectors) {
+      info.marshalSectors.forEach((ms) => {
+        const x = this.transformX(ms.trackPosition.x);
+        const y = this.transformY(ms.trackPosition.y);
+
+        if (ms.drsDetection) {
+          tCtx.fillStyle = "#ffffff";
+          tCtx.font = "bold 8px sans-serif";
+          tCtx.textAlign = "left";
+          tCtx.fillText("DRS DETECTION", x + 10, y);
+          
+          tCtx.beginPath();
+          tCtx.arc(x, y, 4, 0, Math.PI * 2);
+          tCtx.fillStyle = "#ffffff";
+          tCtx.fill();
+        }
+
+        if (ms.drsActivation) {
+          tCtx.fillStyle = "#00f0ff";
+          tCtx.font = "bold 8px sans-serif";
+          tCtx.textAlign = "left";
+          tCtx.fillText("DRS ACTIVATION", x + 10, y);
+          
+          tCtx.beginPath();
+          tCtx.arc(x, y, 4, 0, Math.PI * 2);
+          tCtx.fillStyle = "#00f0ff";
+          tCtx.fill();
+        }
+      });
+    }
   }
 
   resize() {
@@ -204,6 +401,19 @@ export class TrackMap {
     if (!parent) return;
     this.canvas.width = parent.clientWidth;
     this.canvas.height = parent.clientHeight;
+  }
+
+  setZoom(multiplier) {
+    this.zoom = Math.max(0.65, Math.min(this.zoom * multiplier, 2.4));
+    this.preRenderTrack();
+    this.update(store.playback?.currentTime || 0);
+  }
+
+  resetView() {
+    this.zoom = 1;
+    this.updateScaleFactors();
+    this.preRenderTrack();
+    this.update(store.playback?.currentTime || 0);
   }
 
   handleResize() {
@@ -233,8 +443,9 @@ export class TrackMap {
       this.ctx.drawImage(this.trackCanvas, 0, 0);
     }
 
-    const activeSelectedDriver =
-      store.ui?.selectedDriver || store.selectedDriver;
+    const activeSelectedDriver = String(
+      store.ui?.selectedDriver ?? store.selectedDriver ?? ""
+    );
 
     // Render dot lingkaran kecil penanda posisi mobil masing-masing pembalap
     for (const [driverNumber, loc] of Object.entries(currentLocations)) {
@@ -247,33 +458,76 @@ export class TrackMap {
 
       const x = this.transformX(loc.x);
       const y = this.transformY(loc.y);
-      const isSelected = String(driverNumber) === String(activeSelectedDriver);
+      const isSelected = String(driverNumber) === activeSelectedDriver;
 
-      this.ctx.beginPath();
-
-      if (isSelected) {
-        // Gambar cincin glow luar warna Cyan terang untuk mobil yang sedang dipilih user
-        this.ctx.arc(x, y, 8, 0, Math.PI * 2);
-        this.ctx.fillStyle = teamColor;
-        this.ctx.strokeStyle = "#00f0ff";
-        this.ctx.lineWidth = 3;
-        this.ctx.fill();
-        this.ctx.stroke();
-      } else {
-        // Gambar bulatan standar untuk pembalap lain
-        this.ctx.arc(x, y, 5, 0, Math.PI * 2);
-        this.ctx.fillStyle = teamColor;
-        this.ctx.strokeStyle = "#ffffff";
-        this.ctx.lineWidth = 1;
-        this.ctx.fill();
-        this.ctx.stroke();
-      }
-
-      // Tampilkan teks inisial pembalap (misal: VER, HAM, LEC) di samping titik koordinatnya
-      this.ctx.fillStyle = isSelected ? "#00f0ff" : "#ffffff";
-      this.ctx.font = isSelected ? "bold 11px sans-serif" : "10px sans-serif";
-      this.ctx.fillText(acronym, x + 9, y + 4);
+      this.drawDriverMarker(x, y, teamColor, acronym, isSelected);
     }
+  }
+
+  drawDriverMarker(x, y, teamColor, acronym, isSelected) {
+    if (!this.ctx) return;
+
+    this.ctx.save();
+    if (isSelected) {
+      this.ctx.shadowColor = teamColor;
+      this.ctx.shadowBlur = 24;
+      this.ctx.beginPath();
+      this.ctx.fillStyle = "#7fdfff";
+      this.ctx.strokeStyle = "#ffffff";
+      this.ctx.lineWidth = 3;
+      this.ctx.arc(x, y, 14, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.fillStyle = "#ffffff";
+      this.ctx.font = "bold 11px sans-serif";
+      this.ctx.textAlign = "left";
+      this.ctx.textBaseline = "middle";
+      this.drawLabelChip(x + 18, y - 2, acronym, teamColor);
+    } else {
+      this.ctx.beginPath();
+      this.ctx.fillStyle = teamColor;
+      this.ctx.strokeStyle = "#26262d";
+      this.ctx.lineWidth = 2;
+      this.ctx.arc(x, y, 7, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.stroke();
+    }
+    this.ctx.restore();
+  }
+
+  drawLabelChip(x, y, text, accentColor) {
+    if (!this.ctx) return;
+    const paddingX = 12;
+    this.ctx.font = "bold 12px Titillium Web, sans-serif";
+    const textWidth = this.ctx.measureText(text).width;
+    const width = textWidth + paddingX * 2;
+    const height = 26;
+
+    this.ctx.beginPath();
+    this.ctx.fillStyle = "rgba(12, 12, 16, 0.92)";
+    this.ctx.strokeStyle = accentColor;
+    this.ctx.lineWidth = 2;
+    this.roundRect(x, y - height / 2, width, height, 999);
+    this.ctx.fill();
+    this.ctx.stroke();
+
+    this.ctx.fillStyle = "#ffffff";
+    this.ctx.textAlign = "left";
+    this.ctx.textBaseline = "middle";
+    this.ctx.fillText(text, x + paddingX, y + 1);
+  }
+
+  roundRect(x, y, width, height, radius) {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const r = Math.min(radius, width / 2, height / 2);
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + width, y, x + width, y + height, r);
+    ctx.arcTo(x + width, y + height, x, y + height, r);
+    ctx.arcTo(x, y + height, x, y, r);
+    ctx.arcTo(x, y, x + width, y, r);
+    ctx.closePath();
   }
 
   // Fungsi pembersihan total untuk mencegah penumpukan alokasi memori

@@ -6,11 +6,15 @@ export const store = {
     laps: [],
     weather: [],
     raceControl: [],
+    stints: [],
+    pit: [],
+    circuitInfo: null,
   },
   playback: {
     currentTime: 0,
     startTime: null,
     endTime: null,
+    duration: 0,
     speed: 1,
     isPlaying: false,
   },
@@ -25,11 +29,19 @@ export const store = {
     this.session = null;
     this.drivers = [];
     this.driverData = {};
-    this.raceData = { laps: [], weather: [], raceControl: [] };
+    this.raceData = {
+      laps: [],
+      weather: [],
+      raceControl: [],
+      stints: [],
+      pit: [],
+      circuitInfo: null,
+    };
     this.playback = {
       currentTime: 0,
       startTime: null,
       endTime: null,
+      duration: 0,
       speed: 1,
       isPlaying: false,
     };

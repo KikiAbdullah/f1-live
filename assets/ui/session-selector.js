@@ -5,7 +5,7 @@ import { store } from "../core/store.js";
 export class SessionSelector {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
-    this.currentYear = 2024; // Default tahun data stabil
+    this.currentYear = 2026; // Default tahun data stabil
     this.sessions = [];
     this.elements = {}; // Menyimpan referensi DOM untuk optimasi
 
@@ -81,7 +81,7 @@ export class SessionSelector {
     loadButton.disabled = true;
     this.sessions = [];
 
-    eventBus.emit("loading:start", `Fetching sessions for ${year}...`);
+    sessionSelect.innerHTML = '<option value="">Loading sessions...</option>';
     try {
       // Mengambil seluruh jenis sesi dari OpenF1 API
       const allSessions = await F1Api.fetchSessions(year, "%");
@@ -125,9 +125,10 @@ export class SessionSelector {
       sessionSelect.disabled = false;
     } catch (error) {
       console.error("Failed to fetch sessions:", error);
-      eventBus.emit("loading:error", "Failed to load sessions. Try again.");
+      sessionSelect.innerHTML =
+        '<option value="">Failed to load sessions</option>';
     } finally {
-      eventBus.emit("loading:success");
+      loadButton.disabled = true;
     }
   }
 

@@ -11,7 +11,7 @@
   --f1-red: #e10600;
   --border-grey: #2b2b30;
   --accent-blue: #0090ff;
-  
+
   /* Team Colors */
   --team-redbull: #1e41ff;
   --team-mercedes: #00d2be;
@@ -32,7 +32,8 @@
 }
 
 body {
-  font-family: "Titillium Web", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Titillium Web", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
   background-color: var(--bg-dark);
   color: var(--text-main);
   height: 100vh;
@@ -89,9 +90,15 @@ body {
 }
 
 @keyframes pulse-border {
-  0% { border-color: var(--f1-red); }
-  50% { border-color: transparent; }
-  100% { border-color: var(--f1-red); }
+  0% {
+    border-color: var(--f1-red);
+  }
+  50% {
+    border-color: transparent;
+  }
+  100% {
+    border-color: var(--f1-red);
+  }
 }
 
 /* 1. TOP HEADER */
@@ -104,7 +111,7 @@ body {
   padding: 0 20px;
   position: relative;
   z-index: 100;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 .f1-logo-container {
@@ -119,7 +126,7 @@ body {
   font-size: 1.8em;
   letter-spacing: -2px;
   line-height: 1;
-  border-right: 2px solid rgba(255,255,255,0.3);
+  border-right: 2px solid rgba(255, 255, 255, 0.3);
   padding-right: 20px;
 }
 
@@ -155,7 +162,7 @@ body {
   gap: 10px;
   background: transparent;
   border: none;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255, 255, 255, 0.7);
   font-weight: 700;
   font-size: 0.85em;
   cursor: pointer;
@@ -163,9 +170,10 @@ body {
   text-transform: uppercase;
 }
 
-.nav-pill:hover, .nav-pill.active {
+.nav-pill:hover,
+.nav-pill.active {
   color: #fff;
-  background: rgba(0,0,0,0.15);
+  background: rgba(0, 0, 0, 0.15);
 }
 
 .nav-pill.active {
@@ -179,14 +187,16 @@ body {
 }
 
 .lap-counter-box {
-  background: rgba(0,0,0,0.2);
+  background: rgba(0, 0, 0, 0.2);
   padding: 5px 15px;
   border-radius: 4px;
   font-weight: 800;
   font-size: 1em;
 }
 
-.lap-counter-box span { color: #fff; }
+.lap-counter-box span {
+  color: #fff;
+}
 
 #toggle-session-loader {
   background: none;
@@ -228,7 +238,11 @@ body {
   animation: blink 1s infinite;
 }
 
-@keyframes blink { 50% { opacity: 0; } }
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
 
 .tab-group {
   display: flex;
@@ -307,8 +321,13 @@ body {
   padding: 0 8px;
 }
 
-.leaderboard-row:hover { background: #1a1a22; }
-.leaderboard-row.selected { background: #22222b; border-left: 4px solid var(--f1-red); }
+.leaderboard-row:hover {
+  background: #1a1a22;
+}
+.leaderboard-row.selected {
+  background: #22222b;
+  border-left: 4px solid var(--f1-red);
+}
 
 .lb-pos {
   width: 25px;
@@ -339,7 +358,9 @@ body {
   margin-left: auto;
 }
 
-.leaderboard-row.in-pit { background: rgba(225, 6, 0, 0.08); }
+.leaderboard-row.in-pit {
+  background: rgba(225, 6, 0, 0.08);
+}
 
 /* CENTER-LEFT PANEL: TELEMETRY & FEEDS */
 .info-panel {
@@ -348,7 +369,7 @@ body {
   border-right: 1px solid var(--border-grey);
   display: none; /* Hidden by default */
   flex-direction: column;
-  box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+  box-shadow: 5px 0 15px rgba(0, 0, 0, 0.3);
   z-index: 10;
 }
 
@@ -377,11 +398,27 @@ body {
   border: 1px solid var(--border-grey);
 }
 
-.profile-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.profile-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
-.profile-text { display: flex; flex-direction: column; }
-.profile-text .d-name { font-weight: 800; font-size: 1.2em; color: var(--f1-red); }
-.profile-text .d-team { font-size: 0.75em; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+.profile-text {
+  display: flex;
+  flex-direction: column;
+}
+.profile-text .d-name {
+  font-weight: 800;
+  font-size: 1.2em;
+  color: var(--f1-red);
+}
+.profile-text .d-team {
+  font-size: 0.75em;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+}
 
 /* GAUGES SECTION */
 .telemetry-dashboard {
@@ -407,11 +444,15 @@ body {
   height: 100%;
 }
 
-.gauge-bg { fill: none; stroke: #22222b; stroke-width: 10; }
-.gauge-fill { 
-  fill: none; 
-  stroke: var(--accent-blue); 
-  stroke-width: 10; 
+.gauge-bg {
+  fill: none;
+  stroke: #22222b;
+  stroke-width: 10;
+}
+.gauge-fill {
+  fill: none;
+  stroke: var(--accent-blue);
+  stroke-width: 10;
   stroke-linecap: round;
   transition: stroke-dasharray 0.3s ease;
 }
@@ -423,9 +464,23 @@ body {
   flex-direction: column;
 }
 
-.speed-num { font-size: 2.8em; font-weight: 800; line-height: 1; }
-.speed-unit { font-size: 0.7em; font-weight: 700; color: var(--text-muted); letter-spacing: 2px; }
-.rpm-text { font-size: 0.8em; font-weight: 600; color: var(--text-muted); margin-top: 5px; }
+.speed-num {
+  font-size: 2.8em;
+  font-weight: 800;
+  line-height: 1;
+}
+.speed-unit {
+  font-size: 0.7em;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+.rpm-text {
+  font-size: 0.8em;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 5px;
+}
 
 /* Side Bars for Throttle/Brake */
 .pedal-inputs {
@@ -459,10 +514,20 @@ body {
   transition: height 0.1s ease;
 }
 
-.throttle-fill { background: #2ecc71; box-shadow: 0 0 10px rgba(46, 204, 113, 0.4); }
-.brake-fill { background: var(--f1-red); box-shadow: 0 0 10px rgba(225, 6, 0, 0.4); }
+.throttle-fill {
+  background: #2ecc71;
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+}
+.brake-fill {
+  background: var(--f1-red);
+  box-shadow: 0 0 10px rgba(225, 6, 0, 0.4);
+}
 
-.pedal-label { font-size: 0.6em; font-weight: 800; color: var(--text-muted); }
+.pedal-label {
+  font-size: 0.6em;
+  font-weight: 800;
+  color: var(--text-muted);
+}
 
 /* Gear & DRS */
 .tech-stats {
@@ -480,11 +545,28 @@ body {
   border: 1px solid var(--border-grey);
 }
 
-.stat-val { font-size: 1.4em; font-weight: 800; display: block; }
-.stat-val span { font-size: 0.6em; font-weight: 600; color: var(--text-muted); vertical-align: middle; margin-right: 5px; }
-.stat-label { font-size: 0.65em; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+.stat-val {
+  font-size: 1.4em;
+  font-weight: 800;
+  display: block;
+}
+.stat-val span {
+  font-size: 0.6em;
+  font-weight: 600;
+  color: var(--text-muted);
+  vertical-align: middle;
+  margin-right: 5px;
+}
+.stat-label {
+  font-size: 0.65em;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
 
-.drs-active { color: #2ecc71; }
+.drs-active {
+  color: #2ecc71;
+}
 
 /* FEED SECTION */
 .panel-tabs {
@@ -506,7 +588,7 @@ body {
 .feed-content {
   height: 180px;
   overflow-y: auto;
-  background: rgba(0,0,0,0.15);
+  background: rgba(0, 0, 0, 0.15);
   padding: 10px;
   font-size: 0.75em;
   scrollbar-width: thin;
@@ -514,13 +596,19 @@ body {
 
 .feed-item {
   padding: 5px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   gap: 10px;
 }
 
-.feed-time { color: var(--text-muted); font-family: monospace; font-weight: 600; }
-.feed-msg { color: #eee; }
+.feed-time {
+  color: var(--text-muted);
+  font-family: monospace;
+  font-weight: 600;
+}
+.feed-msg {
+  color: #eee;
+}
 
 /* MAIN CONTENT: TRACK MAP */
 .track-viewport {
@@ -558,10 +646,13 @@ body {
   justify-content: center;
   font-size: 1.3em;
   transition: all 0.2s;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-.tool-btn:hover { background: var(--panel-header); transform: translateY(-2px); }
+.tool-btn:hover {
+  background: var(--panel-header);
+  transform: translateY(-2px);
+}
 
 /* FOOTER CONTROLS */
 .app-footer {
@@ -587,8 +678,16 @@ body {
   min-width: 180px;
 }
 
-.phase-tag { color: var(--f1-red); font-weight: 800; font-size: 0.9em; }
-#time-display { font-family: 'JetBrains Mono', monospace; font-size: 1.2em; font-weight: 600; }
+.phase-tag {
+  color: var(--f1-red);
+  font-weight: 800;
+  font-size: 0.9em;
+}
+#time-display {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1.2em;
+  font-weight: 600;
+}
 
 .timeline-wrap {
   flex: 1;
@@ -613,7 +712,9 @@ body {
   transition: transform 0.1s;
 }
 
-#play-pause:active { transform: scale(0.9); }
+#play-pause:active {
+  transform: scale(0.9);
+}
 
 #timeline-slider {
   flex: 1;
@@ -625,8 +726,19 @@ body {
   appearance: none;
 }
 
-#timeline-slider::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; }
-#timeline-slider::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; background: #fff; border-radius: 50%; margin-top: -5px; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+#timeline-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+}
+#timeline-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  margin-top: -5px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
 
 .footer-widgets {
   display: flex;
@@ -646,7 +758,7 @@ body {
 }
 
 .weather-widget {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   padding: 8px 15px;
   border-radius: 20px;
   display: flex;
@@ -655,9 +767,18 @@ body {
   font-size: 0.85em;
 }
 
-.w-item { display: flex; align-items: center; gap: 5px; }
-.w-label { color: var(--text-muted); font-weight: 600; }
-.w-val { font-weight: 800; }
+.w-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.w-label {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.w-val {
+  font-weight: 800;
+}
 
 .rolex-logo {
   display: flex;
@@ -666,8 +787,16 @@ body {
   opacity: 0.8;
 }
 
-.rolex-logo .crown { color: #e5c158; font-size: 0.9em; }
-.rolex-logo .brand { color: #2ecc71; font-weight: 800; font-size: 0.6em; letter-spacing: 1px; }
+.rolex-logo .crown {
+  color: #e5c158;
+  font-size: 0.9em;
+}
+.rolex-logo .brand {
+  color: #2ecc71;
+  font-weight: 800;
+  font-size: 0.6em;
+  letter-spacing: 1px;
+}
 
 /* Session Loader Overlay (Compact) */
 .session-loader-mini {
@@ -678,12 +807,14 @@ body {
   padding: 15px;
   border: 1px solid var(--border-grey);
   border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   display: none;
   z-index: 1000;
 }
 
-.session-loader-mini.visible { display: block; }
+.session-loader-mini.visible {
+  display: block;
+}
 
 .loader-grid {
   display: grid;
@@ -712,7 +843,259 @@ body {
 }
 
 /* Flag Classes */
-.flag-yellow { color: #f1c40f; }
-.flag-red { color: #e74c3c; }
-.flag-green { color: #2ecc71; }
-.flag-purple { color: #9b59b6; }
+.flag-yellow {
+  color: #f1c40f;
+}
+.flag-red {
+  color: #e74c3c;
+}
+.flag-green {
+  color: #2ecc71;
+}
+.flag-purple {
+  color: #9b59b6;
+}
+
+/* ==========================================================================
+   F1 Live - Functional polish layer
+   ========================================================================== */
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(225, 6, 0, 0.16), transparent 32vw),
+    radial-gradient(circle at bottom right, rgba(0, 144, 255, 0.12), transparent 36vw),
+    var(--bg-dark);
+}
+
+#loading-overlay {
+  background:
+    linear-gradient(135deg, rgba(225, 6, 0, 0.14), transparent 38%),
+    var(--bg-dark);
+}
+
+#loading-overlay::before,
+.track-viewport::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
+
+#loading-overlay::before {
+  mask-image: radial-gradient(circle, #000 0%, transparent 72%);
+}
+
+#loading-overlay.error .loader {
+  border-color: #f1c40f;
+}
+
+.app-header {
+  background: linear-gradient(90deg, #e10600, #b80500 58%, #15151e);
+}
+
+.sub-navbar,
+.app-footer {
+  backdrop-filter: blur(18px);
+}
+
+.sidebar-leaderboard {
+  width: 148px;
+}
+
+.leaderboard-row {
+  height: 46px;
+}
+
+.leaderboard-row:hover {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent);
+}
+
+.leaderboard-row.selected {
+  background: linear-gradient(90deg, rgba(225, 6, 0, 0.24), rgba(34, 34, 43, 0.95));
+}
+
+.lb-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.info-panel {
+  width: 360px;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.35);
+}
+
+.driver-profile {
+  background:
+    linear-gradient(135deg, rgba(225, 6, 0, 0.15), transparent),
+    var(--panel-header);
+}
+
+.ghost-close {
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-grey);
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.3em;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.ghost-close:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: rotate(90deg);
+}
+
+.feed-entry {
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  gap: 10px;
+}
+
+.feed-entry.empty,
+.leaderboard-empty {
+  color: var(--text-muted);
+}
+
+.track-viewport {
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.045), transparent 46%),
+    linear-gradient(135deg, #16161e, #09090d);
+}
+
+.tool-btn {
+  background: rgba(21, 21, 30, 0.82);
+  backdrop-filter: blur(16px);
+}
+
+#play-pause:disabled,
+#timeline-slider:disabled,
+#speed-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.weather-info {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 280px;
+}
+
+.weather-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-muted);
+}
+
+.weather-value {
+  color: #fff;
+  font-weight: 800;
+}
+
+.session-loader-mini {
+  left: 150px;
+  background: rgba(31, 31, 39, 0.96);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.35);
+}
+
+.session-selector {
+  min-width: 330px;
+}
+
+.selector-controls {
+  display: grid;
+  grid-template-columns: 0.65fr 1.35fr;
+  gap: 10px;
+}
+
+.selector-controls select,
+.session-selector button {
+  width: 100%;
+  background: #101015;
+  color: #fff;
+  border: 1px solid var(--border-grey);
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.session-selector button {
+  margin-top: 10px;
+  background: var(--f1-red);
+  border: none;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.session-selector button:disabled {
+  background: #3a3a42;
+  cursor: not-allowed;
+}
+
+.leaderboard-empty {
+  padding: 16px 10px;
+  font-size: 0.8em;
+  text-align: center;
+}
+
+@media (max-width: 1100px) {
+  .header-center-nav {
+    display: none;
+  }
+
+  .info-panel {
+    position: absolute;
+    left: 148px;
+    top: 0;
+    bottom: 0;
+  }
+
+  .weather-widget {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .session-header-info,
+  .rolex-logo {
+    display: none;
+  }
+
+  .sidebar-leaderboard {
+    width: 86px;
+  }
+
+  .lb-team-stripe,
+  .lb-status-dot {
+    display: none;
+  }
+
+  .info-panel {
+    left: 86px;
+    right: 0;
+    width: auto;
+  }
+
+  .app-footer {
+    padding: 0 12px;
+    gap: 12px;
+  }
+
+  .speed-select-wrap {
+    display: none;
+  }
+}

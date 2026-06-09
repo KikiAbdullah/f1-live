@@ -3,105 +3,95 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>F1 LIVE - Ultimate Race Control</title>
+    <title>F1 Live - Ultimate Race Control</title>
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@500;600&display=swap"
     />
     <link rel="stylesheet" href="assets/css/main.css" />
   </head>
-  <body>
-    <!-- Fullscreen Loading Overlay -->
+  <body data-active-panel="telemetry">
     <div id="loading-overlay">
       <div class="f1-logo">F1</div>
-      <div class="loader">Memuat Data OpenF1</div>
+      <div class="loader">Memuat data OpenF1</div>
       <div id="loading-status">Inisialisasi sistem...</div>
     </div>
 
-    <!-- Main Header -->
     <header class="app-header">
       <div class="f1-logo-container">
         <span class="f1-logo">F1</span>
         <div class="session-header-info">
-          <div id="track-name">SAKHIR GRAND PRIX</div>
+          <div id="track-name">Sakhir Grand Prix</div>
           <div id="session-date">2024 • Race Session</div>
         </div>
       </div>
 
-      <nav class="header-center-nav">
-        <button class="nav-pill active">Driver Tracker</button>
-        <button class="nav-pill">Leaderboard</button>
-        <button class="nav-pill">Timing Data</button>
-        <button class="nav-pill">Pit Strategy</button>
+      <nav class="header-center-nav" aria-label="Mode tampilan">
+        <button class="nav-pill active" data-view="tracker">Driver Tracker</button>
+        <button class="nav-pill" data-view="leaderboard">Leaderboard</button>
+        <button class="nav-pill" data-view="timing">Timing Data</button>
+        <button class="nav-pill" data-view="strategy">Pit Strategy</button>
       </nav>
 
       <div class="header-right">
         <div class="lap-counter-box">
-          LAP <span id="current-lap">1</span> / <span id="total-laps">57</span>
+          LAP <span id="current-lap">1</span> / <span id="total-laps">--</span>
         </div>
-        <button id="toggle-session-loader">📅</button>
+        <button id="toggle-session-loader" aria-label="Pilih sesi">📅</button>
       </div>
     </header>
 
-    <!-- Sub Navbar -->
     <div class="sub-navbar">
       <div class="live-tag"><span class="dot"></span> REPLAY</div>
-      <div class="tab-group">
-        <button class="tab-item active">Telemetry</button>
-        <button class="tab-item">Sectors</button>
-        <button class="tab-item">Weather</button>
-        <button class="tab-item">Messages</button>
+      <div class="tab-group" aria-label="Panel data">
+        <button class="tab-item active" data-panel="telemetry">Telemetry</button>
+        <button class="tab-item" data-panel="sectors">Sectors</button>
+        <button class="tab-item" data-panel="weather">Weather</button>
+        <button class="tab-item" data-panel="messages">Messages</button>
       </div>
     </div>
 
-    <!-- App Main Body -->
     <div class="app-viewport">
-      <!-- Session Selector Overlay (Mini) -->
       <div id="session-loader-overlay" class="session-loader-mini">
-        <div class="sidebar-header">SELECT SESSION</div>
-        <div id="session-selector">
-          <div class="loader-grid">
-            <select id="year-select">
-              <option value="2024">2024</option>
-              <option value="2023">2023</option>
-            </select>
-            <select id="session-select">
-              <option value="Race">Race</option>
-              <option value="Qualifying">Qualifying</option>
-            </select>
-            <button id="load-session-btn" class="load-btn">LOAD SESSION DATA</button>
-          </div>
-        </div>
+        <div class="sidebar-header">Select Session</div>
+        <div id="session-selector"></div>
       </div>
 
-      <!-- Leftmost: Position List -->
       <aside class="sidebar-leaderboard">
-        <div class="sidebar-header">POSITIONS</div>
-        <div id="leaderboard" class="leaderboard-container">
-          <!-- Leaderboard Rows will be injected here -->
-        </div>
+        <div class="sidebar-header">Positions</div>
+        <div id="leaderboard" class="leaderboard-container"></div>
       </aside>
 
-      <!-- Info Panel: Telemetry & Feeds -->
       <section id="driver-info-panel" class="info-panel">
         <div class="driver-profile">
           <div class="profile-top">
             <div class="profile-img-wrap">
-              <img id="telemetry-driver-avatar" src="https://via.placeholder.com/50/22222b/ffffff?text=F1" alt="Driver">
+              <img
+                id="telemetry-driver-avatar"
+                src="https://placehold.co/96x96/15151e/ffffff?text=F1"
+                alt="Driver"
+              />
             </div>
             <div class="profile-text">
-              <span class="d-name" id="telemetry-driver-name">SELECT DRIVER</span>
+              <span class="d-name" id="telemetry-driver-name">Select Driver</span>
               <span class="d-team" id="telemetry-team-name">No Active Data</span>
             </div>
-            <button id="close-info-panel" style="margin-left: auto; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2em;">✕</button>
+            <button id="close-info-panel" class="ghost-close" aria-label="Tutup panel">×</button>
           </div>
         </div>
 
         <div class="telemetry-dashboard">
           <div class="gauge-main">
-            <svg class="gauge-svg" viewBox="0 0 100 100">
+            <svg class="gauge-svg" viewBox="0 0 100 100" aria-hidden="true">
               <circle class="gauge-bg" cx="50" cy="50" r="45"></circle>
-              <circle id="telemetry-gauge-fill" class="gauge-fill" cx="50" cy="50" r="45" stroke-dasharray="0 283"></circle>
+              <circle
+                id="telemetry-gauge-fill"
+                class="gauge-fill"
+                cx="50"
+                cy="50"
+                r="45"
+                stroke-dasharray="0 283"
+              ></circle>
             </svg>
             <div class="gauge-center-info">
               <span class="speed-num" id="telemetry-speed">0</span>
@@ -115,13 +105,13 @@
               <div class="vertical-bar-bg">
                 <div id="telemetry-throttle" class="bar-fill throttle-fill"></div>
               </div>
-              <span class="pedal-label">THROTTLE</span>
+              <span class="pedal-label">Throttle</span>
             </div>
             <div class="pedal-box">
               <div class="vertical-bar-bg">
                 <div id="telemetry-brake" class="bar-fill brake-fill"></div>
               </div>
-              <span class="pedal-label">BRAKE</span>
+              <span class="pedal-label">Brake</span>
             </div>
           </div>
 
@@ -138,49 +128,42 @@
         </div>
 
         <div class="panel-tabs">
-          <div class="feed-header">
-            <span>RACE CONTROL FEED</span>
-          </div>
+          <div class="feed-header"><span>Race Control Feed</span></div>
           <div id="race-feed" class="feed-content"></div>
-          
-          <div class="feed-header">
-            <span>PIT STOP LOG</span>
-          </div>
+          <div class="feed-header"><span>Pit Stop Log</span></div>
           <div id="pit-stops-feed" class="feed-content"></div>
         </div>
       </section>
 
-      <!-- Main: Track Map -->
       <main class="track-viewport">
         <canvas id="track-map"></canvas>
-        
         <div class="map-tools">
-          <button class="tool-btn" title="Center Map">🧭</button>
-          <button class="tool-btn" title="Zoom In">➕</button>
-          <button class="tool-btn" title="Zoom Out">➖</button>
+          <button class="tool-btn" id="center-map" title="Center Map">⌖</button>
+          <button class="tool-btn" id="zoom-in" title="Zoom In">＋</button>
+          <button class="tool-btn" id="zoom-out" title="Zoom Out">－</button>
         </div>
       </main>
     </div>
 
-    <!-- Footer Controls -->
     <footer class="app-footer">
       <div class="playback-status">
-        <span class="phase-tag" id="session-phase">LIVE</span>
+        <span class="phase-tag" id="session-phase">REPLAY</span>
         <div id="time-display">00:00:00</div>
       </div>
 
       <div class="timeline-wrap">
-        <button id="play-pause">▶</button>
-        <input type="range" id="timeline-slider" min="0" max="100" value="0">
+        <button id="play-pause" disabled aria-label="Putar replay">▶</button>
+        <input type="range" id="timeline-slider" min="0" max="100" value="0" disabled />
       </div>
 
       <div class="footer-widgets">
         <div class="speed-select-wrap">
-          <select id="speed-select">
-            <option value="1">1x SPEED</option>
-            <option value="2">2x SPEED</option>
-            <option value="5">5x SPEED</option>
-            <option value="10">10x SPEED</option>
+          <select id="speed-select" disabled>
+            <option value="1">1x Speed</option>
+            <option value="2">2x Speed</option>
+            <option value="5">5x Speed</option>
+            <option value="10">10x Speed</option>
+            <option value="20">20x Speed</option>
           </select>
         </div>
 
@@ -196,140 +179,12 @@
         </div>
 
         <div class="rolex-logo">
-          <span class="crown">👑</span>
+          <span class="crown">♛</span>
           <span class="brand">ROLEX</span>
         </div>
       </div>
     </footer>
 
-    <script type="module">
-      import { replayEngine } from "./assets/core/replay-engine.js";
-      import { Leaderboard } from "./assets/ui/leaderboard.js";
-      import { TrackMap } from "./assets/ui/trackmap.js";
-      import { Controls } from "./assets/ui/controls.js";
-      import { RaceFeed } from "./assets/ui/race-feed.js";
-      import { PitStopFeed } from "./assets/ui/pit-stops.js";
-      import { WeatherDisplay } from "./assets/ui/weather.js";
-      import { TelemetryChart } from "./assets/ui/telemetry.js";
-      import { SessionSelector } from "./assets/ui/session-selector.js";
-      import { telemetryService } from "./assets/services/telemetry-service.js";
-      import { eventBus } from "./assets/core/event-bus.js";
-      import { store } from "./assets/core/store.js";
-
-      // Global Access for Debugging / Manual Update Logic
-      window.telemetryService = telemetryService;
-
-      // Initialize UI Components
-      const leaderboard = new Leaderboard("leaderboard");
-      const trackMap = new TrackMap("track-map");
-      const controls = new Controls("play-pause");
-      const raceFeed = new RaceFeed("race-feed");
-      const sessionSelector = new SessionSelector("session-selector");
-      const pitStopFeed = new PitStopFeed("pit-stops-feed");
-      const weatherDisplay = new WeatherDisplay("weather-display");
-
-      // Custom UI Logic for Session Loader Toggle
-      const loaderOverlay = document.getElementById('session-loader-overlay');
-      document.getElementById('toggle-session-loader').addEventListener('click', () => {
-          loaderOverlay.classList.toggle('visible');
-      });
-
-      // Handle Driver Selection
-      const infoPanel = document.getElementById('driver-info-panel');
-      
-      eventBus.on("driver:selected", (driverNumber) => {
-        const driver = store.drivers.find(d => String(d.driver_number) === String(driverNumber));
-        if (driver) {
-          infoPanel.classList.add('visible'); // Show panel when driver is selected
-          document.getElementById("telemetry-driver-name").textContent = driver.broadcast_name || driver.full_name;
-          document.getElementById("telemetry-team-name").textContent = driver.team_name;
-          if (driver.headshot_url) document.getElementById("telemetry-driver-avatar").src = driver.headshot_url;
-        }
-      });
-
-      // Close Panel Logic
-      document.getElementById('close-info-panel').addEventListener('click', () => {
-          infoPanel.classList.remove('visible');
-      });
-
-      // Handle Loading Overlays
-      const loadingOverlay = document.getElementById("loading-overlay");
-      eventBus.on("loading:start", (msg) => {
-        loadingOverlay.classList.remove("hidden");
-        const statusEl = document.getElementById("loading-status");
-        if (statusEl) statusEl.textContent = msg;
-      });
-
-      eventBus.on("loading:success", () => {
-        loadingOverlay.classList.add("hidden");
-        loaderOverlay.classList.remove('visible');
-      });
-
-      // Update Header Info
-      const updateHeaderInfo = () => {
-        if (store.session) {
-          document.getElementById("track-name").textContent = store.session.meeting_name;
-          document.getElementById("session-date").textContent = `${new Date(store.session.date_start).getFullYear()} • ${store.session.session_name}`;
-          document.getElementById("session-phase").textContent = store.session.session_name.toUpperCase();
-        }
-        if (store.raceData?.laps) {
-          const maxLap = Math.max(...store.raceData.laps.map(l => l.lap_number || 0));
-          document.getElementById("total-laps").textContent = maxLap > 0 ? maxLap : "--";
-        }
-      };
-
-      eventBus.on("session:ready", updateHeaderInfo);
-
-      // Handle Telemetry Updates (Manual Linkage for Gauges)
-      eventBus.on("playback:update", (timestamp) => {
-          if (store.ui && store.ui.selectedDriver) {
-              const telemetry = telemetryService.getDriverTelemetry(store.ui.selectedDriver, timestamp);
-              if (telemetry) {
-                  // Update Speed
-                  const speedEl = document.getElementById("telemetry-speed");
-                  if (speedEl) speedEl.textContent = Math.round(telemetry.speed || 0);
-                  
-                  // Update RPM
-                  const rpmEl = document.getElementById("telemetry-rpm");
-                  if (rpmEl) rpmEl.textContent = `${Math.round(telemetry.rpm || 0)} RPM`;
-                  
-                  // Update Gear
-                  const gearEl = document.getElementById("telemetry-gear");
-                  if (gearEl) gearEl.textContent = telemetry.n_gear || 0;
-                  
-                  // Update DRS
-                  const drsEl = document.getElementById("telemetry-drs");
-                  if (drsEl) {
-                      const drsValue = telemetry.drs || 0;
-                      // DRS status logic based on OpenF1 values (typically 10, 12, 14 mean active)
-                      const isDrsActive = (drsValue >= 10);
-                      drsEl.textContent = isDrsActive ? "ON" : "OFF";
-                      drsEl.classList.toggle("drs-active", isDrsActive);
-                  }
-                  
-                  // Update Pedals
-                  const throttleEl = document.getElementById("telemetry-throttle");
-                  if (throttleEl) throttleEl.style.height = `${telemetry.throttle || 0}%`;
-                  
-                  const brakeEl = document.getElementById("telemetry-brake");
-                  if (brakeEl) brakeEl.style.height = `${(telemetry.brake || 0) * 100}%`;
-                  
-                  // Update Gauge SVG (Circular Arc)
-                  const gaugeFill = document.getElementById("telemetry-gauge-fill");
-                  if (gaugeFill) {
-                      const circumference = 283; // 2 * PI * 45
-                      const speedPercent = Math.min((telemetry.speed || 0) / 360, 1);
-                      const dashArray = speedPercent * circumference;
-                      gaugeFill.setAttribute("stroke-dasharray", `${dashArray} ${circumference}`);
-                  }
-              }
-          }
-      });
-      
-      // Initial Load
-      replayEngine.loadSession(9472).catch(console.error);
-
-      window.onresize = () => trackMap.resize?.();
-    </script>
+    <script type="module" src="assets/js/app.js"></script>
   </body>
 </html>

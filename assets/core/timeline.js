@@ -48,7 +48,7 @@ export const timeline = {
 
     const maxTime = Math.max(
       0,
-      store.playback.endTime - store.playback.startTime
+      store.playback.duration || store.playback.endTime - store.playback.startTime
     );
 
     // Memastikan nilai tidak NaN dan tetap berada di dalam batas waktu sesi
@@ -76,7 +76,7 @@ export const timeline = {
 
     store.playback.currentTime += delta * store.playback.speed;
 
-    const maxTime = store.playback.endTime - store.playback.startTime;
+    const maxTime = store.playback.duration || store.playback.endTime - store.playback.startTime;
 
     if (store.playback.currentTime >= maxTime) {
       store.playback.currentTime = maxTime;

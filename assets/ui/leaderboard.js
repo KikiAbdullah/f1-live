@@ -52,13 +52,11 @@ export class Leaderboard {
       const item = event.target.closest(".leaderboard-row");
       if (!item) return;
 
-      const driverNumber = Number(item.dataset.driverNumber);
-      if (Number.isNaN(driverNumber)) return;
+      const driverNumber = String(item.dataset.driverNumber || "");
+      if (!driverNumber) return;
 
-      // FIX: Akses state yang benar sesuai struktur store.js
-      if (store.ui) {
-        store.ui.selectedDriver = driverNumber;
-      }
+      if (store.ui) store.ui.selectedDriver = driverNumber;
+      store.selectedDriver = driverNumber;
 
       eventBus.emit("driver:selected", driverNumber);
     });
@@ -102,7 +100,7 @@ export class Leaderboard {
   render(positions = []) {
     if (!this.listElement || !Array.isArray(positions)) return;
 
-    const selectedDriver = store.ui ? store.ui.selectedDriver : null;
+    const selectedDriver = String(store.ui?.selectedDriver ?? store.selectedDriver ?? "");
 
     if (positions.length === 0) {
       this.listElement.innerHTML = `<div class="leaderboard-empty">No position data available</div>`;
@@ -118,7 +116,7 @@ export class Leaderboard {
 
           return `
                     <div class="leaderboard-row ${
-                      String(driverNumber) === String(selectedDriver)
+                      String(driverNumber) === selectedDriver
                         ? "selected"
                         : ""
                     } ${p.inPit ? "in-pit" : ""}"
@@ -150,7 +148,7 @@ export class Leaderboard {
 
       // Cek status Pit dan Selected
       const inPit = !!p.inPit;
-      const isSelected = String(driverNumber) === String(selectedDriver);
+      const isSelected = String(driverNumber) === selectedDriver;
 
       if (inPit !== cache.el.classList.contains("in-pit")) {
         cache.el.classList.toggle("in-pit", inPit);
