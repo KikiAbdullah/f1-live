@@ -1,329 +1,428 @@
+/* ==========================================================================
+   F1 Live Replay - Core Architecture Stylesheet
+   ========================================================================== */
+
 :root {
-    --bg-color: #0b0b0e;
-    --panel-bg: #15151e;
-    --panel-header: #1f1f27;
-    --text-color: #ffffff;
-    --text-muted: #949498;
-    --f1-red: #e10600;
-    --border-color: #2b2b30;
-    --accent-color: #38383f;
+  --bg-color: #0b0b0e;
+  --panel-bg: #15151e;
+  --panel-header: #1f1f27;
+  --text-color: #ffffff;
+  --text-muted: #949498;
+  --f1-red: #e10600;
+  --border-color: #2b2b30;
+  --accent-color: #38383f;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-    margin: 0;
-    font-family: 'Titillium Web', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+  font-family: "Titillium Web", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  min-height: 100vh;
+  padding-bottom: 90px; /* Memberi ruang untuk absolute footer controls */
 }
 
-/* Header / Session Info */
+/* --- Loading Overlay --- */
+#loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(11, 11, 14, 0.9);
+  z-index: 9999;
+  display: block;
+  text-align: center;
+  padding-top: 25vh;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#loading-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.loader {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: var(--text-color);
+  border-bottom: 3px solid var(--f1-red);
+  display: inline-block;
+  padding-bottom: 10px;
+}
+
+/* --- Header / Session Info --- */
 .app-header {
-    height: 60px;
-    background-color: var(--panel-bg);
-    border-bottom: 2px solid var(--f1-red);
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    gap: 30px;
+  height: 60px;
+  background-color: var(--panel-bg);
+  border-bottom: 2px solid var(--f1-red);
+  padding: 10px 20px;
+}
+
+.header-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.header-table td {
+  vertical-align: middle;
 }
 
 .session-info {
-    display: flex;
-    flex-direction: column;
+  text-align: left;
 }
 
 .session-title {
-    font-weight: bold;
-    font-size: 1.2em;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+  font-weight: bold;
+  font-size: 1.2em;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .session-details {
-    font-size: 0.8em;
-    color: var(--text-muted);
+  font-size: 0.8em;
+  color: var(--text-muted);
+}
+
+.lap-box-wrapper {
+  text-align: right;
 }
 
 .current-lap-box {
-    background: var(--f1-red);
-    padding: 5px 15px;
-    border-radius: 4px;
-    font-weight: bold;
-    font-size: 1.1em;
+  background: var(--f1-red);
+  padding: 6px 15px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 1.1em;
+  display: inline-block;
+  color: white;
 }
 
-/* Main Layout */
+/* --- Core Layout Structure --- */
 .app-container {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-    padding: 10px;
-    gap: 10px;
+  width: 100%;
+  padding: 15px;
 }
 
-.sidebar {
-    width: 320px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+/* Menggunakan struktur display table standar agar kompatibel & aman dari overflow */
+.layout-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 15px 0px;
 }
 
+.layout-column {
+  display: table-cell;
+  vertical-align: top;
+}
+
+.sidebar-col {
+  width: 320px;
+}
+
+.main-col {
+  width: auto;
+}
+
+/* --- Panel Component --- */
 .panel {
-    background-color: var(--panel-bg);
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+  background-color: var(--panel-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 15px;
+  display: block;
 }
 
 .panel-header {
-    background-color: var(--panel-header);
-    padding: 10px 15px;
-    font-weight: bold;
-    font-size: 0.9em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    border-bottom: 1px solid var(--border-color);
+  background-color: var(--panel-header);
+  padding: 12px 15px;
+  font-weight: bold;
+  font-size: 0.9em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
 }
 
-.main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
+/* --- Map & Telemetry Sizing --- */
 .map-panel {
-    flex: 2;
-    position: relative;
-    display: flex; /* Added for proper canvas stretching */
-    flex-direction: column; /* Added for proper canvas stretching */
-    min-height: 400px;
+  min-height: 450px;
+  position: relative;
 }
 
 .map-panel canvas#track-map {
-    flex: 1; /* Allow canvas to grow */
-    width: 100%;
-    height: 100%;
-    background-color: var(--panel-bg); /* Ensure background is dark */
+  display: block;
+  width: 100%;
+  height: 400px;
+  background-color: #111118;
 }
 
-
-.feed-panel {
-    flex: 1;
-    min-height: 200px;
+.telemetry-panel {
+  min-height: 320px;
 }
 
-/* Session Selector */
+.chart-container {
+  width: 100%;
+  height: 260px;
+  position: relative;
+  padding: 10px;
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* --- Session Selector UI --- */
 .session-selector {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 15px;
+  padding: 15px;
 }
 
-.selector-controls {
-    display: flex;
-    gap: 10px;
+.selector-controls-table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-#year-select, #session-select {
-    flex: 1;
-    background: var(--panel-header);
-    color: white;
-    border: 1px solid var(--border-color);
-    padding: 8px 10px;
-    border-radius: 4px;
+.selector-controls-table td {
+  padding: 4px;
+}
+
+#year-select,
+#session-select {
+  width: 100%;
+  background: var(--panel-header);
+  color: white;
+  border: 1px solid var(--border-color);
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 0.9em;
 }
 
 #load-session-btn {
-    background: var(--f1-red);
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.2s;
+  width: 100%;
+  background: var(--f1-red);
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
 #load-session-btn:disabled {
-    background: var(--text-muted);
-    cursor: not-allowed;
+  background: var(--text-muted);
+  cursor: not-allowed;
 }
 
 #load-session-btn:hover:not(:disabled) {
-    background: #c00500;
+  background: #c00500;
 }
 
-
-.telemetry-panel {
-    flex: 2; /* Make telemetry chart larger */
-    min-height: 300px;
+/* --- Weather Layout --- */
+.weather-info-grid {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.weather-panel .weather-info {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    padding: 15px;
-    font-size: 0.9em;
+.weather-info-grid td {
+  width: 50%;
+  padding: 10px 15px;
+  vertical-align: middle;
 }
 
 .weather-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 5px 0;
-    border-bottom: 1px dashed var(--border-color);
-}
-
-.weather-item:last-child, .weather-item:nth-last-child(2) {
-    border-bottom: none;
+  display: block;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--border-color);
 }
 
 .weather-label {
-    color: var(--text-muted);
+  color: var(--text-muted);
+  font-size: 0.85em;
+  float: left;
 }
 
 .weather-value {
-    font-weight: bold;
+  font-weight: bold;
+  font-size: 0.9em;
+  float: right;
 }
 
+.clearfix::after {
+  content: "";
+  clear: both;
+  display: table;
+}
 
-/* Leaderboard */
+/* --- Leaderboard List --- */
 #leaderboard {
-    flex: 1;
-    overflow-y: auto;
+  max-height: 600px;
+  overflow-y: auto;
 }
 
 .leaderboard-list {
-    display: flex;
-    flex-direction: column;
+  display: block;
 }
 
 .leaderboard-item {
-    padding: 12px 15px;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    transition: background 0.2s;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-color);
+  display: block;
+  transition: background 0.2s;
 }
 
 .leaderboard-item:hover {
-    background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .leaderboard-item.selected {
-    background: var(--accent-color);
-    border-left-width: 6px !important; /* Make border thicker when selected */
+  background: var(--accent-color);
+  border-left: 6px solid var(--f1-red);
 }
 
 .leaderboard-item.in-pit {
-    background: rgba(225, 6, 0, 0.2); /* Light red tint for cars in pit */
+  background: rgba(225, 6, 0, 0.15);
 }
 
+.row-table {
+  width: 100%;
+  border-collapse: collapse;
+}
 
+.row-table td {
+  vertical-align: middle;
+}
 
 .leaderboard-item .pos {
-    width: 25px;
-    font-weight: bold;
-    color: var(--text-muted);
+  width: 30px;
+  font-weight: bold;
+  color: var(--text-muted);
 }
 
 .leaderboard-item .name {
-    flex: 1;
-    font-weight: bold;
+  font-weight: bold;
+  color: #ffffff;
 }
 
 .leaderboard-item .gap {
-    font-family: monospace;
-    color: var(--text-muted);
-    font-size: 0.9em;
-    width: 60px; /* New: Added width for consistent spacing */
-    text-align: right; /* New: Align text to the right */
+  font-family: monospace;
+  color: var(--text-muted);
+  font-size: 0.9em;
+  width: 75px;
+  text-align: right;
 }
 
 .leaderboard-item .lap-time {
-    font-family: monospace;
-    color: var(--text-muted);
-    font-size: 0.9em;
-    width: 60px; /* Adjust as needed */
-    text-align: right;
+  font-family: monospace;
+  color: var(--text-muted);
+  font-size: 0.9em;
+  width: 85px;
+  text-align: right;
 }
 
-
-/* Controls */
-.controls-container {
-    background-color: var(--panel-bg);
-    border-top: 1px solid var(--border-color);
-    padding: 15px 30px;
-}
-
-.controls-bar {
-    display: flex;
-    align-items: center;
-    gap: 25px;
-}
-
-#timeline-slider {
-    flex: 1;
-    accent-color: var(--f1-red);
-}
-
-#play-pause {
-    background: var(--f1-red);
-    color: white;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-    text-transform: uppercase;
-    transition: transform 0.1s;
-}
-
-#play-pause:active {
-    transform: scale(0.95);
-}
-
-#time-display {
-    font-family: monospace;
-    font-size: 1.2em;
-    width: 100px;
-}
-
-#speed-select {
-    background: var(--panel-header);
-    color: white;
-    border: 1px solid var(--border-color);
-    padding: 5px 10px;
-    border-radius: 4px;
-}
-
-/* Race Control Feed */
+/* --- Data Feeds (Race Control & Pit Stops) --- */
 .feed-list {
-    padding: 10px;
-    font-size: 0.85em;
-    overflow-y: auto;
+  padding: 10px;
+  font-size: 0.85em;
+  max-height: 220px;
+  overflow-y: auto;
+  background-color: rgba(0, 0, 0, 0.2);
 }
 
 .feed-entry {
-    padding: 5px 0;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-color);
+  display: block;
 }
 
-.feed-time { color: var(--text-muted); }
-.feed-msg { flex: 1; }
+.feed-time {
+  color: var(--text-muted);
+  font-family: monospace;
+  display: inline-block;
+  width: 70px;
+}
 
-.flag-yellow { color: #f1c40f; font-weight: bold; }
-.flag-red { color: #e74c3c; font-weight: bold; }
-.flag-green { color: #2ecc71; font-weight: bold; }
+.feed-msg {
+  display: inline-block;
+}
+
+.flag-yellow {
+  color: #f1c40f;
+  font-weight: bold;
+}
+.flag-red {
+  color: #e74c3c;
+  font-weight: bold;
+}
+.flag-green {
+  color: #2ecc71;
+  font-weight: bold;
+}
+
+/* --- Footer Controls --- */
+.controls-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 75px;
+  background-color: var(--panel-bg);
+  border-top: 2px solid var(--border-color);
+  padding: 15px 30px;
+  z-index: 1000;
+}
+
+.controls-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.controls-table td {
+  vertical-align: middle;
+}
+
+#timeline-slider {
+  width: 100%;
+  accent-color: var(--f1-red);
+  cursor: pointer;
+}
+
+#play-pause {
+  background: var(--f1-red);
+  color: white;
+  border: none;
+  padding: 10px 25px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: transform 0.1s;
+}
+
+#play-pause:active {
+  transform: scale(0.95);
+}
+
+#time-display {
+  font-family: monospace;
+  font-size: 1.2em;
+  font-weight: bold;
+  text-align: center;
+  color: #ffffff;
+}
+
+#speed-select {
+  background: var(--panel-header);
+  color: white;
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}

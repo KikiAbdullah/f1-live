@@ -1,154 +1,265 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F1 Live Replay</title>
-    <link rel="stylesheet" href="assets/css/main.css">
-</head>
-<body>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>F1 Live Replay Dashboard</title>
+    <link rel="stylesheet" href="assets/css/main.css" />
+  </head>
+  <body>
     <div id="loading-overlay">
-        <div class="loader">Loading Race Data...</div>
+      <div class="loader">Memuat Data Balapan OpenF1...</div>
     </div>
 
     <header class="app-header">
-        <div class="session-info">
-            <div class="session-title" id="track-name">Loading Track...</div>
+      <table class="header-table">
+        <tr>
+          <td class="session-info">
+            <div class="session-title" id="track-name">Memuat Sirkuit...</div>
             <div class="session-details" id="session-date">---</div>
-        </div>
-        <div class="current-lap-box">
-            LAP <span id="current-lap">1</span> / <span id="total-laps">--</span>
-        </div>
+          </td>
+          <td class="lap-box-wrapper">
+            <div class="current-lap-box">
+              LAP <span id="current-lap">1</span> /
+              <span id="total-laps">--</span>
+            </div>
+          </td>
+        </tr>
+      </table>
     </header>
 
     <div class="app-container">
-        <aside class="sidebar">
-            <section class="panel">
-                <div class="panel-header">Select Session</div>
-                <div id="session-selector"></div>
-            </section>
+      <div class="layout-table">
+        <div class="layout-column sidebar-col">
+          <section class="panel">
+            <div class="panel-header">Pilih Sesi</div>
+            <div id="session-selector" class="session-selector">
+              <table class="selector-controls-table">
+                <tr>
+                  <td>
+                    <select id="year-select">
+                      <option value="2024">2024</option>
+                    </select>
+                  </td>
+                  <td>
+                    <select id="session-select">
+                      <option value="Race">Race</option>
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="padding-top: 8px">
+                    <button id="load-session-btn">LOAD SESSION</button>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </section>
 
-            <section class="panel" style="flex: 1;">
-                <div class="panel-header">Leaderboard</div>
-                <div id="leaderboard"></div>
-            </section>
-        </aside>
-        
-        <main class="main-content">
-            <section class="panel map-panel">
-                <div class="panel-header">Live Track Map</div>
-                <canvas id="track-map"></canvas>
-            </section>
-            
-            <section class="panel feed-panel">
+          <section class="panel">
+            <div class="panel-header">Klasemen Balapan (Leaderboard)</div>
+            <div id="leaderboard"></div>
+          </section>
+        </div>
+
+        <div class="layout-column main-col">
+          <section class="panel map-panel">
+            <div class="panel-header">
+              Peta Lintasan Sirkuit (Live Track Map)
+            </div>
+            <canvas id="track-map"></canvas>
+          </section>
+
+          <div class="layout-table" style="margin-bottom: 15px">
+            <div class="layout-column" style="width: 50%; padding-right: 7px">
+              <section class="panel" style="margin-bottom: 0">
                 <div class="panel-header">Race Control Feed</div>
                 <div id="race-feed" class="feed-list"></div>
-            </section>
-            
-            <section class="panel feed-panel">
-                <div class="panel-header">Pit Stops</div>
+              </section>
+            </div>
+            <div class="layout-column" style="width: 50%; padding-left: 7px">
+              <section class="panel" style="margin-bottom: 0">
+                <div class="panel-header">Pit Stops Log</div>
                 <div id="pit-stops-feed" class="feed-list"></div>
-            </section>
+              </section>
+            </div>
+          </div>
 
-            <section class="panel weather-panel">
-                <div class="panel-header">Weather</div>
-                <div id="weather-display"></div>
-            </section>
-            
-            <section class="panel telemetry-panel" style="flex:2;">
-                <div class="panel-header">Telemetry - <span id="telemetry-driver-name">No Driver Selected</span></div>
-                <div style="flex: 1; position: relative;">
-                    <canvas id="telemetry-chart"></canvas>
-                </div>
-            </section>
-        </main>
+          <section class="panel weather-panel">
+            <div class="panel-header">Kondisi Cuaca (Weather Status)</div>
+            <div id="weather-display">
+              <table class="weather-info-grid">
+                <tr>
+                  <td>
+                    <div class="weather-item clearfix">
+                      <span class="weather-label">Air Temp</span>
+                      <span class="weather-value" id="air-temp">-- °C</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="weather-item clearfix">
+                      <span class="weather-label">Track Temp</span>
+                      <span class="weather-value" id="track-temp">-- °C</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="weather-item clearfix">
+                      <span class="weather-label">Humidity</span>
+                      <span class="weather-value" id="humidity">-- %</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="weather-item clearfix">
+                      <span class="weather-label">Wind Speed</span>
+                      <span class="weather-value" id="wind-speed">-- m/s</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel telemetry-panel">
+            <div class="panel-header">
+              Grafik Telemetri:
+              <span id="telemetry-driver-name" style="color: var(--f1-red)"
+                >Pilih Pembalap di Leaderboard</span
+              >
+            </div>
+            <div class="chart-container">
+              <canvas id="telemetry-chart"></canvas>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
 
     <footer class="controls-container">
-        <div id="controls"></div>
+      <div id="controls">
+        <table class="controls-table">
+          <tr>
+            <td style="width: 100px">
+              <button id="play-pause">PLAY</button>
+            </td>
+            <td style="width: 120px; padding: 0 10px">
+              <div id="time-display">00:00:00</div>
+            </td>
+            <td style="padding: 0 15px">
+              <input
+                type="range"
+                id="timeline-slider"
+                min="0"
+                max="100"
+                value="0"
+              />
+            </td>
+            <td style="width: 90px; text-align: right">
+              <select id="speed-select">
+                <option value="1">1x</option>
+                <option value="2">2x</option>
+                <option value="5">5x</option>
+                <option value="10">10x</option>
+              </select>
+            </td>
+          </tr>
+        </table>
+      </div>
     </footer>
 
     <script type="module">
-        import { replayEngine } from './assets/core/replay-engine.js';
-        import { Leaderboard } from './assets/ui/leaderboard.js';
-        import { TrackMap } from './assets/ui/trackmap.js';
-        import { Controls } from './assets/ui/controls.js';
-        import { RaceFeed } from './assets/ui/race-feed.js';
-        import { PitStopFeed } from './assets/ui/pit-stops.js'; // Import PitStopFeed
-        import { WeatherDisplay } from './assets/ui/weather.js'; // Import WeatherDisplay
-        import { TelemetryChart } from './assets/ui/telemetry.js';
-        import { SessionSelector } from './assets/ui/session-selector.js'; 
-        import { eventBus } from './assets/core/event-bus.js';
-        import { store } from './assets/core/store.js'; // Import store here
+      import { replayEngine } from "./assets/core/replay-engine.js";
+      import { Leaderboard } from "./assets/ui/leaderboard.js";
+      import { TrackMap } from "./assets/ui/trackmap.js";
+      import { Controls } from "./assets/ui/controls.js";
+      import { RaceFeed } from "./assets/ui/race-feed.js";
+      import { PitStopFeed } from "./assets/ui/pit-stops.js";
+      import { WeatherDisplay } from "./assets/ui/weather.js";
+      import { TelemetryChart } from "./assets/ui/telemetry.js";
+      import { SessionSelector } from "./assets/ui/session-selector.js";
+      import { eventBus } from "./assets/core/event-bus.js";
+      import { store } from "./assets/core/store.js";
 
+      // Inisialisasi Seluruh Komponen Antarmuka (UI Components)
+      const leaderboard = new Leaderboard("leaderboard");
+      const trackMap = new TrackMap("track-map");
+      const controls = new Controls("controls");
+      const raceFeed = new RaceFeed("race-feed");
+      const telemetryChart = new TelemetryChart("telemetry-chart");
+      const sessionSelector = new SessionSelector("session-selector");
+      const pitStopFeed = new PitStopFeed("pit-stops-feed");
+      const weatherDisplay = new WeatherDisplay("weather-display");
 
-        // Initialize UI
-        const leaderboard = new Leaderboard('leaderboard');
-        const trackMap = new TrackMap('track-map');
-        const controls = new Controls('controls');
-        const raceFeed = new RaceFeed('race-feed');
-        const telemetryChart = new TelemetryChart('telemetry-chart');
-        const sessionSelector = new SessionSelector('session-selector');
-        const pitStopFeed = new PitStopFeed('pit-stops-feed');
-        const weatherDisplay = new WeatherDisplay('weather-display');
+      // Sinkronisasi Seleksi Pembalap dengan Label Grafik Telemetri
+      eventBus.on("driver:selected", (driverNumber) => {
+        const driver = store.drivers.find(
+          (d) => String(d.driver_number) === String(driverNumber)
+        );
+        document.getElementById("telemetry-driver-name").textContent = driver
+          ? driver.full_name
+          : "No Driver Selected";
+      });
 
-        eventBus.on('driver:selected', (driverNumber) => {
-            const driver = store.drivers.find(d => String(d.driver_number) === String(driverNumber));
-            document.getElementById('telemetry-driver-name').textContent = driver ? driver.full_name : 'No Driver Selected';
-        });
+      // Kontrol Visibilitas Layar Loading Screen
+      const loadingOverlay = document.getElementById("loading-overlay");
+      eventBus.on("loading:start", (msg) => {
+        loadingOverlay.classList.remove("hidden");
+        const loaderEl = loadingOverlay.querySelector(".loader");
+        if (loaderEl) loaderEl.textContent = msg;
+      });
 
-        const loadingOverlay = document.getElementById('loading-overlay');
-        eventBus.on('loading:start', (msg) => {
-            loadingOverlay.classList.remove('hidden');
-            loadingOverlay.querySelector('.loader').textContent = msg;
-        });
-        eventBus.on('loading:success', () => loadingOverlay.classList.add('hidden'));
+      eventBus.on("loading:success", () => {
+        loadingOverlay.classList.add("hidden");
+      });
 
-        // Initial session loading handled by SessionSelector
-        // replayEngine.loadSession(9472).then(() => {
-        //     // Initial setup on successful load
-        // });
+      eventBus.on("loading:error", (errorMsg) => {
+        const loaderEl = loadingOverlay.querySelector(".loader");
+        if (loaderEl)
+          loaderEl.innerHTML = `<span style="color: #e74c3c;">Gagal Memuat Sesi: ${errorMsg}</span>`;
+      });
 
-        eventBus.on('session:load', async (sessionKey) => {
-            console.log(`Loading new session with key: ${sessionKey}`);
-            await replayEngine.loadSession(sessionKey);
-            // After loading, update session info in header
-            if (store.session) {
-                document.getElementById('track-name').textContent = store.session.meeting_name;
-                document.getElementById('session-date').textContent = 
-                    `${new Date(store.session.date_start).getFullYear()} • ${store.session.circuit_short_name || 'Circuit'}`;
-                
-                const maxLap = Math.max(...store.raceData.laps.map(l => l.lap_number));
-                document.getElementById('total-laps').textContent = maxLap;
-            } else {
-                // Fallback for initial load if store.session not set by selector yet
-                document.getElementById('track-name').textContent = "Bahrain Grand Prix";
-                document.getElementById('session-date').textContent = "2024 • Sakhir International Circuit";
-                const maxLap = Math.max(...store.raceData.laps.map(l => l.lap_number));
-                document.getElementById('total-laps').textContent = maxLap;
-            }
-        });
+      // Handler Pembaruan Informasi Sesi di Header saat Sesi Berhasil Dimuat
+      const updateHeaderInfo = () => {
+        if (store.session) {
+          document.getElementById("track-name").textContent =
+            store.session.meeting_name;
+          document.getElementById("session-date").textContent = `${new Date(
+            store.session.date_start
+          ).getFullYear()} • ${store.session.circuit_short_name || "Circuit"}`;
+        } else {
+          document.getElementById("track-name").textContent =
+            "Bahrain Grand Prix";
+          document.getElementById("session-date").textContent =
+            "2024 • Sakhir International Circuit";
+        }
 
-        // Trigger initial session load with a default if no session is selected yet.
-        // Or wait for user to select from UI.
-        // For now, let's keep the automatic load for first boot.
-        replayEngine.loadSession(9472).then(() => {
-            if (store.session) { // This might be null if no session selected yet from UI
-                document.getElementById('track-name').textContent = store.session.meeting_name;
-                document.getElementById('session-date').textContent = 
-                    `${new Date(store.session.date_start).getFullYear()} • ${store.session.circuit_short_name || 'Circuit'}`;
-                const maxLap = Math.max(...store.raceData.laps.map(l => l.lap_number));
-                document.getElementById('total-laps').textContent = maxLap;
-            } else {
-                 // Fallback if initial load has no store.session
-                document.getElementById('track-name').textContent = "Bahrain Grand Prix";
-                document.getElementById('session-date').textContent = "2024 • Sakhir International Circuit";
-                const maxLap = Math.max(...store.raceData.laps.map(l => l.lap_number));
-                document.getElementById('total-laps').textContent = maxLap;
-            }
-        });
+        if (store.raceData?.laps && store.raceData.laps.length > 0) {
+          const maxLap = Math.max(
+            ...store.raceData.laps.map((l) => l.lap_number || 0)
+          );
+          document.getElementById("total-laps").textContent =
+            maxLap > 0 ? maxLap : "--";
+        }
+      };
 
-        window.onresize = () => trackMap.resize();
+      eventBus.on("session:ready", updateHeaderInfo);
+      eventBus.on("session:load", async (sessionKey) => {
+        console.log(`Mencoba memuat data sesi dengan Key: ${sessionKey}`);
+        await replayEngine.loadSession(sessionKey);
+      });
+
+      // Trigger otomatis untuk memuat sesi bawaan pertama kali (Default Session ID: 9472)
+      replayEngine.loadSession(9472).catch((err) => {
+        console.error("Gagal menjalankan inisialisasi awal sesi:", err);
+      });
+
+      // Pastikan dimensi canvas peta lintasan diperbarui secara dinamis saat ukuran layar berubah
+      window.onresize = () => {
+        if (typeof trackMap.resize === "function") {
+          trackMap.resize();
+        }
+      };
     </script>
-</body>
+  </body>
 </html>

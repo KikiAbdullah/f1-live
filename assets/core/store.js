@@ -1,36 +1,53 @@
 export const store = {
-    session: null,
-    drivers: [],
-    raceData: {
-        positions: [],
-        locations: [],
-        telemetry: [],
-        laps: [],
-        weather: [],
-        raceControl: [],
-        stints: [],
-        pit: [],
-        teamRadio: [],
-        overtake: []
-    },
-    playback: {
-        currentTime: 0,
-        startTime: null,
-        endTime: null,
-        speed: 1,
-        isPlaying: false
-    },
-    ui: {
-        selectedDriver: null,
-        activeTab: 'leaderboard'
-    },
+  session: null,
+  drivers: [],
+  driverData: {},
+  raceData: {
+    laps: [],
+    weather: [],
+    raceControl: [],
+  },
+  playback: {
+    currentTime: 0,
+    startTime: null,
+    endTime: null,
+    speed: 1,
+    isPlaying: false,
+  },
+  ui: {
+    selectedDriver: null,
+    activeTab: "leaderboard",
+  },
+  sessionCache: {},
 
-    setState(key, value) {
-        this[key] = value;
-        // In a real reactive store, we'd trigger updates here
-    },
+  // Tambahan: Method reset sangat krusial agar tidak ada data bocor saat user mengganti sesi balapan
+  reset() {
+    this.session = null;
+    this.drivers = [];
+    this.driverData = {};
+    this.raceData = { laps: [], weather: [], raceControl: [] };
+    this.playback = {
+      currentTime: 0,
+      startTime: null,
+      endTime: null,
+      speed: 1,
+      isPlaying: false,
+    };
+    this.ui.selectedDriver = null;
+  },
 
-    setRaceData(data) {
-        this.raceData = { ...this.raceData, ...data };
+  setState(key, value) {
+    this[key] = value;
+  },
+
+  setRaceData(key, data, driverNumber = null) {
+    if (driverNumber !== null) {
+      if (!this.driverData[driverNumber]) {
+        this.driverData[driverNumber] = {};
+      }
+      this.driverData[driverNumber][key] = data;
+    } else {
+      this.raceData[key] = data;
     }
+  },
 };

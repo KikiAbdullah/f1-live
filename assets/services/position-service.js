@@ -1,61 +1,185 @@
-import { store } from '../core/store.js';
-import { replayEngine } from '../core/replay-engine.js';
+import { store } from "../core/store.js";
+import { replayEngine } from "../core/replay-engine.js";
+import { eventBus } from "../core/event-bus.js";
+
+// Objek memori lokal untuk melacak posisi indeks terakhir pencarian data (Kursor)
+const _cursorCache = {
+  positions: {},
+  pit: {},
+};
 
 export const positionService = {
-    getLatestPositions(timestamp) {
-        const drivers = store.drivers;
-        const positions = [];
-        let leaderTime = null;
+  init() {
+    // Otomatis bersihkan cache kursor jika pengguna melakukan manual seek atau ganti sesi
+    eventBus.on("playback:seek", () => this.resetCursors());
+    eventBus.on("session:ready", () => this.resetCursors());
+  },
 
-        for (const driver of drivers) {
-            const pos = replayEngine.getDriverData('positions', driver.driver_number, timestamp);
-            // We need the lap data for duration/lap number at the current timestamp
-            const lapData = replayEngine.getDriverData('laps', driver.driver_number, timestamp); 
-            // Find the most recent pit stop for this driver
-            const pitStop = replayEngine.getDriverData('pit', driver.driver_number, timestamp);
+  resetCursors() {
+    _cursorCache.positions = {};
+    _cursorCache.pit = {};
+  },
 
-            if (pos) {
-                const driverPos = {
-                    ...driver,
-                    position: pos.position,
-                    date: pos.date,
-                    lastLapTime: lapData?.lap_duration || null,
-                    currentLapNumber: lapData?.lap_number || 0,
-                    totalLapTime: lapData?.duration_s || 0, // Total time in seconds
-                    inPit: !!pitStop && pitStop.lap_number === lapData?.lap_number // Simple check if pit occurred on current lap
-                };
-                positions.push(driverPos);
+  /**
+   * ENGINE OPTIMASI UTAMA: Mengambil data posisi dengan algoritma pencarian kursor linear
+   */
+  getCachedDriverData(type, driverNumber, timestamp) {
+    if (typeof store.playback.startTime !== "number") return null;
+    const absoluteTimeMillis = store.playback.startTime + timestamp;
 
-                if (pos.position === 1) {
-                    leaderTime = driverPos.totalLapTime;
-                }
-            }
-        }
+    // Ambil data spesifik driver dari store
+    const data = store.driverData[driverNumber]?.[type];
+    if (!data || data.length === 0) return null;
 
-        positions.sort((a, b) => a.position - b.position);
-
-        // Calculate gaps
-        if (leaderTime !== null) {
-            for (let i = 0; i < positions.length; i++) {
-                const p = positions[i];
-                if (p.position !== 1) {
-                    const gap = p.totalLapTime - leaderTime;
-                    p.gap = `+${gap.toFixed(3)}`; // Format as +X.XXXs
-                } else {
-                    p.gap = ''; // Leader has no gap
-                }
-            }
-        }
-
-        return positions;
-    },
-
-    // Helper to format time (e.g., 1:23.456)
-    formatLapTime(seconds) {
-        if (!seconds) return '';
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        const formattedSeconds = remainingSeconds.toFixed(3);
-        return `${minutes}:${formattedSeconds.padStart(6, '0')}`;
+    const key = String(driverNumber);
+    if (_cursorCache[type][key] === undefined) {
+      _cursorCache[type][key] = 0;
     }
+
+    let idx = _cursorCache[type][key];
+    if (idx >= data.length) idx = data.length - 1;
+
+    // KONDISI A: Jalur waktu berjalan maju secara kronologis (Kasus Utama - O(1))
+    if (absoluteTimeMillis >= data[idx].timestamp) {
+      while (
+        idx < data.length - 1 &&
+        data[idx + 1].timestamp <= absoluteTimeMillis
+      ) {
+        idx++;
+      }
+    }
+    // KONDISI B: Pengguna melakukan manual seek mundur (Fallback - O(log N))
+    else {
+      const fallbackEntry = replayEngine.findLatestEntry(
+        data,
+        absoluteTimeMillis
+      );
+      if (!fallbackEntry) return null;
+      idx = data.indexOf(fallbackEntry);
+    }
+
+    _cursorCache[type][key] = idx;
+    return data[idx];
+  },
+
+  /**
+   * Mengambil daftar posisi terkini seluruh pembalap (Leaderboard) beserta gap & status pit
+   */
+  getLatestPositions(timestamp) {
+    const drivers = store.drivers;
+    if (!drivers || drivers.length === 0) return [];
+
+    const positions = [];
+    const absoluteTimeMillis = (store.playback.startTime || 0) + timestamp;
+
+    // FIX LOGIKA STRUKTUR DATA: Ambil data global laps dari store.raceData.laps
+    const allLaps = store.raceData?.laps || [];
+
+    for (let i = 0; i < drivers.length; i++) {
+      const driver = drivers[i];
+      const driverNum = driver.driver_number;
+
+      // Ambil data posisi & pit stop menggunakan Cached Service (O(1))
+      const pos = this.getCachedDriverData("positions", driverNum, timestamp);
+      const pitStop = this.getCachedDriverData("pit", driverNum, timestamp);
+
+      if (!pos) continue;
+
+      // FIX STRUKTUR PENCARIAN DATA LAP: Cari entri lap terakhir milik pembalap ini berdasarkan timestamp
+      // Karena data allLaps berskala global, kita filter manual berdasarkan driver dan batas waktu
+      let currentLap = null;
+      for (let j = allLaps.length - 1; j >= 0; j--) {
+        const lap = allLaps[j];
+        if (lap.driver_number === driverNum) {
+          const lapStart = lap.date_start
+            ? new Date(lap.date_start).getTime()
+            : 0;
+          if (lapStart <= absoluteTimeMillis) {
+            currentLap = lap;
+            break;
+          }
+        }
+      }
+
+      // FIX LOGIKA STATUS PIT: Memastikan pembalap dianggap di dalam pit
+      // hanya jika ia berada di lap yang sama dengan event pit stop terakhir, dan event pit tersebut belum terlalu usang
+      let inPit = false;
+      if (pitStop && currentLap) {
+        const pitTime = pitStop.timestamp;
+        const lapStart = currentLap.date_start
+          ? new Date(currentLap.date_start).getTime()
+          : 0;
+        // Jika waktu mobil masuk pit terjadi setelah lap ini dimulai
+        inPit =
+          pitTime >= lapStart && pitStop.lap_number === currentLap.lap_number;
+      }
+
+      positions.push({
+        ...driver,
+        position: pos.position,
+        date: pos.date,
+        lastLapTime: currentLap?.lap_duration || null,
+        currentLapNumber: currentLap?.lap_number || 0,
+        // Gunakan lap_number sebagai basis perhitungan kasar jika duration_s tidak konsisten di OpenF1
+        totalLapsCompleted: currentLap?.lap_number
+          ? currentLap.lap_number - 1
+          : 0,
+        totalLapTime: currentLap?.duration_s || 0,
+        inPit: inPit,
+      });
+    }
+
+    // Urutkan pembalap berdasarkan urutan posisi klasemen P1, P2, P3...
+    positions.sort((a, b) => a.position - b.position);
+
+    // HITUNG GAP / INTERVAL ANTAR PEMBALAP secara aman
+    if (positions.length > 0) {
+      const leader = positions[0];
+      leader.gap = "LEADER";
+      leader.interval = "LEADER";
+
+      for (let i = 1; i < positions.length; i++) {
+        const p = positions[i];
+        const prev = positions[i - 1];
+
+        // Jika pembalap tertinggal satu lap atau lebih dari pemimpin balapan (Lapped)
+        const lapDeficit = leader.currentLapNumber - p.currentLapNumber;
+
+        if (lapDeficit > 0) {
+          p.gap = `+${lapDeficit} ${lapDeficit === 1 ? "Lap" : "Laps"}`;
+        } else {
+          // Hitung selisih waktu secara presisi jika berada di lap yang sama
+          const gapTime = p.totalLapTime - leader.totalLapTime;
+          p.gap = gapTime > 0 ? `+${gapTime.toFixed(3)}s` : "--";
+        }
+
+        // Hitung interval ke mobil tepat di depannya
+        const intervalDeficit = prev.currentLapNumber - p.currentLapNumber;
+        if (intervalDeficit > 0) {
+          p.interval = `+${intervalDeficit} ${
+            intervalDeficit === 1 ? "Lap" : "Laps"
+          }`;
+        } else {
+          const intervalTime = p.totalLapTime - prev.totalLapTime;
+          p.interval = intervalTime > 0 ? `+${intervalTime.toFixed(3)}s` : "--";
+        }
+      }
+    }
+
+    return positions;
+  },
+
+  /**
+   * Helper untuk memformat waktu (contoh: 83.456 menjadi "1:23.456")
+   */
+  formatLapTime(seconds) {
+    if (!seconds || isNaN(seconds)) return "--:--.---";
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    const formattedSeconds = remainingSeconds.toFixed(3);
+    return `${minutes}:${formattedSeconds.padStart(6, "0")}`;
+  },
 };
+
+// Daftarkan event listener segera saat modul dimuat pertama kali
+positionService.init();
