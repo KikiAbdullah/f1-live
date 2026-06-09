@@ -49,7 +49,7 @@ export class Leaderboard {
     this.eventsBound = true;
 
     this.listElement.addEventListener("click", (event) => {
-      const item = event.target.closest(".leaderboard-item");
+      const item = event.target.closest(".leaderboard-row");
       if (!item) return;
 
       const driverNumber = Number(item.dataset.driverNumber);
@@ -93,7 +93,7 @@ export class Leaderboard {
   highlightDriver(driverNumber) {
     if (!this.listElement) return;
 
-    this.listElement.querySelectorAll(".leaderboard-item").forEach((item) => {
+    this.listElement.querySelectorAll(".leaderboard-row").forEach((item) => {
       const isSelected = item.dataset.driverNumber === String(driverNumber);
       item.classList.toggle("selected", isSelected);
     });
@@ -110,34 +110,23 @@ export class Leaderboard {
       return;
     }
 
-    // OPTIMASI: Jika jumlah pembalap berubah atau ini render pertama, buat ulang DOM
     if (!this.cachedItems || this.cachedItems.length !== positions.length) {
       this.listElement.innerHTML = positions
         .map((p) => {
           const driverNumber = p.driver_number || "";
           const teamColour = p.team_colour || "777777";
-          const lapTime =
-            p.lastLapTime && positionService.formatLapTime
-              ? positionService.formatLapTime(p.lastLapTime)
-              : "--.---";
 
           return `
-                    <div class="leaderboard-item ${
+                    <div class="leaderboard-row ${
                       String(driverNumber) === String(selectedDriver)
                         ? "selected"
                         : ""
                     } ${p.inPit ? "in-pit" : ""}"
-                         data-driver-number="${driverNumber}"
-                         style="border-left:4px solid #${teamColour}">
-                        <span class="pos" style="color:#${teamColour}">${
-            p.position || "-"
-          }</span>
-                        <span class="name">${
-                          p.broadcast_name || "Unknown"
-                        }</span>
-                        <span class="team">${p.team_name || ""}</span>
-                        <span class="gap">${p.gap || "-"}</span>
-                        <span class="lap-time">${lapTime}</span>
+                         data-driver-number="${driverNumber}">
+                        <div class="lb-pos">${p.position || "-"}</div>
+                        <div class="lb-team-stripe" style="background-color: #${teamColour}"></div>
+                        <div class="lb-name">${p.broadcast_name || "Unknown"}</div>
+                        <div class="lb-status-dot" style="background-color: ${p.inPit ? "var(--f1-red)" : "transparent"}"></div>
                     </div>
                 `;
         })
@@ -145,12 +134,11 @@ export class Leaderboard {
 
       // Simpan referensi node untuk update cepat di frame berikutnya
       this.cachedItems = Array.from(
-        this.listElement.querySelectorAll(".leaderboard-item")
+        this.listElement.querySelectorAll(".leaderboard-row")
       ).map((el) => ({
         el,
-        posEl: el.querySelector(".pos"),
-        gapEl: el.querySelector(".gap"),
-        lapTimeEl: el.querySelector(".lap-time"),
+        posEl: el.querySelector(".lb-pos"),
+        dotEl: el.querySelector(".lb-status-dot"),
       }));
       return;
     }
@@ -166,6 +154,9 @@ export class Leaderboard {
 
       if (inPit !== cache.el.classList.contains("in-pit")) {
         cache.el.classList.toggle("in-pit", inPit);
+        if (cache.dotEl) {
+            cache.dotEl.style.backgroundColor = inPit ? "var(--f1-red)" : "transparent";
+        }
       }
       if (isSelected !== cache.el.classList.contains("selected")) {
         cache.el.classList.toggle("selected", isSelected);
@@ -173,18 +164,9 @@ export class Leaderboard {
 
       // Update data dinamis hanya jika ada perubahan teks
       const posText = String(p.position || "-");
-      const gapText = String(p.gap || "-");
-      const lapTimeText =
-        p.lastLapTime && positionService.formatLapTime
-          ? positionService.formatLapTime(p.lastLapTime)
-          : "--.---";
 
       if (cache.posEl.textContent !== posText)
         cache.posEl.textContent = posText;
-      if (cache.gapEl.textContent !== gapText)
-        cache.gapEl.textContent = gapText;
-      if (cache.lapTimeEl.textContent !== lapTimeText)
-        cache.lapTimeEl.textContent = lapTimeText;
 
       // Memastikan dataset tidak tertinggal jika urutan array berubah
       if (cache.el.dataset.driverNumber !== driverNumber) {

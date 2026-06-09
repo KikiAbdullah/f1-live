@@ -13,9 +13,9 @@
   <body>
     <!-- Fullscreen Loading Overlay -->
     <div id="loading-overlay">
-      <div class="f1-logo">F1</div>
+      <div class="f1-logo" style="color: var(--f1-red); margin-bottom: 20px;">F1</div>
       <div class="loader">Memuat Data OpenF1</div>
-      <div id="loading-status">Inisialisasi sistem...</div>
+      <div id="loading-status" style="margin-top: 15px; font-size: 0.8em; color: var(--text-muted);">Inisialisasi sistem...</div>
     </div>
 
     <!-- Main Header -->
@@ -39,7 +39,7 @@
         <div class="lap-counter-box">
           LAP <span id="current-lap">1</span> / <span id="total-laps">57</span>
         </div>
-        <button id="toggle-session-loader">📅</button>
+        <button id="toggle-session-loader" style="background: none; border: none; color: white; cursor: pointer; font-size: 1.2em;">📅</button>
       </div>
     </header>
 
@@ -58,7 +58,7 @@
     <div class="app-viewport">
       <!-- Session Selector Overlay (Mini) -->
       <div id="session-loader-overlay" class="session-loader-mini">
-        <div class="sidebar-header">SELECT SESSION</div>
+        <div class="sidebar-header" style="text-align: left; padding: 0 0 10px 0;">SELECT SESSION</div>
         <div id="session-selector">
           <div class="loader-grid">
             <select id="year-select">
@@ -83,17 +83,16 @@
       </aside>
 
       <!-- Info Panel: Telemetry & Feeds -->
-      <section id="driver-info-panel" class="info-panel">
+      <section class="info-panel">
         <div class="driver-profile">
           <div class="profile-top">
             <div class="profile-img-wrap">
-              <img id="telemetry-driver-avatar" src="https://via.placeholder.com/50/22222b/ffffff?text=F1" alt="Driver">
+              <img id="telemetry-driver-avatar" src="https://via.placeholder.com/50" alt="Driver">
             </div>
             <div class="profile-text">
               <span class="d-name" id="telemetry-driver-name">SELECT DRIVER</span>
               <span class="d-team" id="telemetry-team-name">No Active Data</span>
             </div>
-            <button id="close-info-panel" style="margin-left: auto; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2em;">✕</button>
           </div>
         </div>
 
@@ -170,7 +169,7 @@
       </div>
 
       <div class="timeline-wrap">
-        <button id="play-pause">▶</button>
+        <button id="play-pause" class="play-btn-circle">▶</button>
         <input type="range" id="timeline-slider" min="0" max="100" value="0">
       </div>
 
@@ -212,17 +211,13 @@
       import { WeatherDisplay } from "./assets/ui/weather.js";
       import { TelemetryChart } from "./assets/ui/telemetry.js";
       import { SessionSelector } from "./assets/ui/session-selector.js";
-      import { telemetryService } from "./assets/services/telemetry-service.js";
       import { eventBus } from "./assets/core/event-bus.js";
       import { store } from "./assets/core/store.js";
-
-      // Global Access for Debugging / Manual Update Logic
-      window.telemetryService = telemetryService;
 
       // Initialize UI Components
       const leaderboard = new Leaderboard("leaderboard");
       const trackMap = new TrackMap("track-map");
-      const controls = new Controls("play-pause");
+      const controls = new Controls("play-pause"); // Note: passing ID of button if needed
       const raceFeed = new RaceFeed("race-feed");
       const sessionSelector = new SessionSelector("session-selector");
       const pitStopFeed = new PitStopFeed("pit-stops-feed");
@@ -235,21 +230,13 @@
       });
 
       // Handle Driver Selection
-      const infoPanel = document.getElementById('driver-info-panel');
-      
       eventBus.on("driver:selected", (driverNumber) => {
         const driver = store.drivers.find(d => String(d.driver_number) === String(driverNumber));
         if (driver) {
-          infoPanel.classList.add('visible'); // Show panel when driver is selected
           document.getElementById("telemetry-driver-name").textContent = driver.broadcast_name || driver.full_name;
           document.getElementById("telemetry-team-name").textContent = driver.team_name;
           if (driver.headshot_url) document.getElementById("telemetry-driver-avatar").src = driver.headshot_url;
         }
-      });
-
-      // Close Panel Logic
-      document.getElementById('close-info-panel').addEventListener('click', () => {
-          infoPanel.classList.remove('visible');
       });
 
       // Handle Loading Overlays
@@ -263,6 +250,15 @@
       eventBus.on("loading:success", () => {
         loadingOverlay.classList.add("hidden");
         loaderOverlay.classList.remove('visible');
+      });
+
+      // Handle Telemetry Updates (Manual Linkage for Gauges)
+      eventBus.on("playback:update", (timestamp) => {
+          if (store.ui && store.ui.selectedDriver) {
+              const driver = store.drivers.find(d => d.driver_number === store.ui.selectedDriver);
+              // Logic to update speed/rpm/pedals goes here
+              // These IDs are now in index.html for direct access
+          }
       });
 
       // Update Header Info
@@ -279,52 +275,6 @@
       };
 
       eventBus.on("session:ready", updateHeaderInfo);
-
-      // Handle Telemetry Updates (Manual Linkage for Gauges)
-      eventBus.on("playback:update", (timestamp) => {
-          if (store.ui && store.ui.selectedDriver) {
-              const telemetry = telemetryService.getDriverTelemetry(store.ui.selectedDriver, timestamp);
-              if (telemetry) {
-                  // Update Speed
-                  const speedEl = document.getElementById("telemetry-speed");
-                  if (speedEl) speedEl.textContent = Math.round(telemetry.speed || 0);
-                  
-                  // Update RPM
-                  const rpmEl = document.getElementById("telemetry-rpm");
-                  if (rpmEl) rpmEl.textContent = `${Math.round(telemetry.rpm || 0)} RPM`;
-                  
-                  // Update Gear
-                  const gearEl = document.getElementById("telemetry-gear");
-                  if (gearEl) gearEl.textContent = telemetry.n_gear || 0;
-                  
-                  // Update DRS
-                  const drsEl = document.getElementById("telemetry-drs");
-                  if (drsEl) {
-                      const drsValue = telemetry.drs || 0;
-                      // DRS status logic based on OpenF1 values (typically 10, 12, 14 mean active)
-                      const isDrsActive = (drsValue >= 10);
-                      drsEl.textContent = isDrsActive ? "ON" : "OFF";
-                      drsEl.classList.toggle("drs-active", isDrsActive);
-                  }
-                  
-                  // Update Pedals
-                  const throttleEl = document.getElementById("telemetry-throttle");
-                  if (throttleEl) throttleEl.style.height = `${telemetry.throttle || 0}%`;
-                  
-                  const brakeEl = document.getElementById("telemetry-brake");
-                  if (brakeEl) brakeEl.style.height = `${(telemetry.brake || 0) * 100}%`;
-                  
-                  // Update Gauge SVG (Circular Arc)
-                  const gaugeFill = document.getElementById("telemetry-gauge-fill");
-                  if (gaugeFill) {
-                      const circumference = 283; // 2 * PI * 45
-                      const speedPercent = Math.min((telemetry.speed || 0) / 360, 1);
-                      const dashArray = speedPercent * circumference;
-                      gaugeFill.setAttribute("stroke-dasharray", `${dashArray} ${circumference}`);
-                  }
-              }
-          }
-      });
       
       // Initial Load
       replayEngine.loadSession(9472).catch(console.error);

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>F1 Live Replay - Driver Tracker & Telemetry</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap"
+    />
+    <link rel="stylesheet" href="main.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="logo-section">
+        <span class="f1-logo">F1</span>
+        <div class="session-info">
+          <div class="session-title" id="track-name">HUNGARY 2022</div>
+          <div class="session-details" id="session-date">QUALIFYING</div>
+        </div>
+      </div>
+
+      <nav class="main-nav">
+        <button class="nav-item">
+          <span class="icon">📊</span> LEADERBOARD
+        </button>
+        <button class="nav-item active">
+          <span class="icon">🏎️</span> DRIVER TRACKER
+        </button>
+        <button class="nav-item">
+          <span class="icon">💬</span> COMMENTARY
+        </button>
+      </nav>
+
+      <div class="header-right-controls">
+        <span class="settings-icon">⚙️</span>
+        <span class="close-icon">❌</span>
+      </div>
+    </header>
+
+    <div class="sub-navbar">
+      <div class="live-indicator-box"><span class="live-dot"></span> LIVE</div>
+      <div class="sub-tabs">
+        <button class="tab-btn">Laps</button>
+        <button class="tab-btn">Sectors</button>
+        <button class="tab-btn">Head to Head</button>
+        <button class="tab-btn active">Telemetry</button>
+      </div>
+    </div>
+
+    <div class="app-container">
+      <aside class="sidebar-position">
+        <div class="sidebar-title-header">POSITION</div>
+        <div id="leaderboard" class="leaderboard-list">
+          <div class="driver-pos-item">
+            <span class="pos-num">1</span>
+            <span class="team-color-line ver"></span>
+            <span class="driver-acronym">VER</span>
+          </div>
+          <div class="driver-pos-item active">
+            <span class="pos-num">2</span>
+            <span class="team-color-line alo"></span>
+            <span class="driver-acronym">ALO</span>
+          </div>
+          <div class="driver-pos-item">
+            <span class="pos-num">3</span>
+            <span class="team-color-line nor"></span>
+            <span class="driver-acronym">NOR</span>
+          </div>
+          <div class="driver-pos-item">
+            <span class="pos-num">4</span>
+            <span class="team-color-line ric"></span>
+            <span class="driver-acronym">RIC</span>
+          </div>
+          <div class="driver-pos-item">
+            <span class="pos-num">5</span>
+            <span class="team-color-line zho"></span>
+            <span class="driver-acronym">ZHO</span>
+          </div>
+          <div class="driver-pos-item">
+            <span class="pos-num">6</span>
+            <span class="team-color-line oco"></span>
+            <span class="driver-acronym">OCO</span>
+          </div>
+          <div class="driver-pos-item">
+            <span class="pos-num">7</span>
+            <span class="team-color-line lec"></span>
+            <span class="driver-acronym">LEC</span>
+          </div>
+          <div class="driver-pos-item">
+            <span class="pos-num">8</span>
+            <span class="team-color-line bot"></span>
+            <span class="driver-acronym">BOT</span>
+          </div>
+          <div class="driver-pos-item">
+            <span class="pos-num">9</span>
+            <span class="team-color-line sai"></span>
+            <span class="driver-acronym">SAI</span>
+          </div>
+          <div class="driver-pos-item">
+            <span class="pos-num">10</span>
+            <span class="team-color-line rus"></span>
+            <span class="driver-acronym">RUS</span>
+          </div>
+        </div>
+      </aside>
+
+      <section class="driver-telemetry-panel">
+        <div class="active-driver-header">
+          <img
+            src="https://via.placeholder.com/40"
+            alt="ALO"
+            class="driver-avatar"
+          />
+          <div class="driver-meta">
+            <span class="name">ALO</span>
+            <span class="team-name">Alpine</span>
+          </div>
+          <button class="close-panel-btn">✕</button>
+        </div>
+
+        <div class="telemetry-gauge-container">
+          <div class="speed-gauge-wrap">
+            <div class="gauge-arc">
+              <div class="speed-value">139</div>
+              <div class="speed-unit">KM/H</div>
+              <div class="rpm-value">9860 RPM</div>
+            </div>
+            <div class="bar-indicator throttle-bar">
+              <span class="bar-label">THROTTLE</span>
+              <div class="bar-fill-vertical" style="height: 75%"></div>
+            </div>
+            <div class="bar-indicator brake-bar">
+              <span class="bar-label">BRAKE</span>
+              <div class="bar-fill-vertical" style="height: 0%"></div>
+            </div>
+          </div>
+
+          <div class="drs-gear-box">
+            <div class="drs-status">DRS</div>
+            <div class="gear-value">GEAR <span>3</span></div>
+          </div>
+        </div>
+
+        <div class="sector-times-list">
+          <div class="sector-row">
+            <span>SECTOR 1</span>
+            <span class="time-val">35.022</span>
+          </div>
+          <div class="sector-row">
+            <span>SECTOR 2</span>
+            <span class="time-val">---</span>
+          </div>
+          <div class="sector-row">
+            <span>SECTOR 3</span>
+            <span class="time-val">---</span>
+          </div>
+          <div class="sector-row best-lap">
+            <span>BEST LAP</span>
+            <span class="time-val highlighted">1:17.904</span>
+          </div>
+        </div>
+
+        <div class="battle-mode-section">
+          <div class="vs-circle">VS</div>
+          <button class="battle-btn">ENTER BATTLE MODE</button>
+        </div>
+      </section>
+
+      <main class="main-track-content">
+        <div class="map-wrapper">
+          <canvas id="track-map"></canvas>
+
+          <div class="map-overlay-widgets-left">
+            <button class="map-widget-btn compass">🧭</button>
+            <button class="map-widget-btn undo">↩️</button>
+          </div>
+
+          <div class="map-overlay-widgets-right">
+            <button class="map-widget-btn zoom-in">🎯</button>
+            <button class="map-widget-btn zoom-in">➕</button>
+            <button class="map-widget-btn zoom-out">➖</button>
+          </div>
+
+          <div class="track-label turn-01" style="top: 15%; left: 45%">01</div>
+          <div class="track-label speed-trap" style="top: 40%; left: 40%">
+            SPEED TRAP
+          </div>
+          <div class="track-label drs-zone" style="top: 55%; left: 46%">
+            DRS ACTIVATION ZONE 1
+          </div>
+
+          <div class="driver-track-dot alo" style="top: 42%; left: 81%">
+            <span class="dot-label">ALO</span>
+          </div>
+          <div class="driver-track-dot ham" style="top: 20%; left: 50%">
+            <span class="dot-label">HAM</span>
+          </div>
+          <div class="driver-track-dot zho" style="top: 23%; left: 83%">
+            <span class="dot-label">ZHO</span>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <footer class="controls-container">
+      <div class="controls-bar">
+        <div class="session-time-status-box">
+          <div class="session-phase">Q2</div>
+          <div class="session-countdown" id="time-display">0:07:41</div>
+        </div>
+
+        <div class="timeline-slider-wrapper">
+          <button id="play-pause-btn" class="control-btn-play">⏸</button>
+          <input
+            type="range"
+            id="timeline-slider"
+            min="0"
+            max="100"
+            value="65"
+          />
+        </div>
+
+        <div class="weather-summary-widget">
+          <span class="thermometer-icon">🌡️</span>
+          <span class="weather-label">Air temperature:</span>
+          <span class="weather-value">22 °C</span>
+        </div>
+
+        <div class="rolex-brand-logo">
+          <span class="crown">👑</span>
+          <span class="brand-text">ROLEX</span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

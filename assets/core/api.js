@@ -98,10 +98,12 @@ async function fetchWithRetry(url, options = {}, retries = 10, backoff = 5000) {
 }
 
 export const F1Api = {
-  async fetchSessions(year, sessionName = "Race") {
-    return fetchWithRetry(
-      `${API_BASE_URL}/sessions?year=${year}&session_name=${sessionName}`
-    );
+  async fetchSessions(year, sessionName) {
+    let url = `${API_BASE_URL}/sessions?year=${year}`;
+    if (sessionName && sessionName !== "%") {
+      url += `&session_name=${sessionName}`;
+    }
+    return fetchWithRetry(url);
   },
   async fetchDrivers(sessionKey) {
     return fetchWithRetry(`${API_BASE_URL}/drivers?session_key=${sessionKey}`);
