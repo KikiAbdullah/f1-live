@@ -107,6 +107,21 @@ export const replayEngine = {
         store.raceData[item.key] = globalResults[index];
       });
 
+      // --- PERBAIKAN: Normalisasi timestamp data global SEBELUM didistribusikan ---
+      ["laps", "weather", "raceControl", "stints", "pit"].forEach((key) => {
+        if (store.raceData[key]) {
+          store.raceData[key] = store.raceData[key]
+            .map((entry) => ({
+              ...entry,
+              timestamp:
+                entry.date || entry.date_start
+                  ? new Date(entry.date || entry.date_start).getTime()
+                  : null,
+            }))
+            .filter((e) => e.timestamp !== null);
+        }
+      });
+
       // Fetch Circuit Info jika tersedia
       if (store.session && store.session.circuit_key) {
         try {
@@ -189,19 +204,6 @@ export const replayEngine = {
 
       eventBus.emit("loading:start", `[100%] Finalizing & Sorting data...`);
 
-      // 5. Normalisasi timestamp untuk data global sisanya
-      ["laps", "weather", "raceControl", "stints", "pit"].forEach((key) => {
-        store.raceData[key] = store.raceData[key]
-          .map((entry) => ({
-            ...entry,
-            timestamp:
-              entry.date || entry.date_start
-                ? new Date(entry.date || entry.date_start).getTime()
-                : null,
-          }))
-          .filter((e) => e.timestamp !== null);
-      });
-
       // 6. Sorting data secara efisien
       const sortFn = (a, b) => a.timestamp - b.timestamp;
 
@@ -282,6 +284,30 @@ export const replayEngine = {
           "to",
           new Date(store.playback.endTime).toISOString()
         );
+      }
+
+      // Tampilkan ringkasan data PIT dari database saat pertama kali load
+      if (store.raceData.pit && store.raceData.pit.length > 0) {
+        console.log("%c[DATABASE] Semua Data Pit Stop Ditemukan:", "color: #f1c40f; font-weight: bold; font-size: 14px;");
+        
+        const formatTimeline = (totalSeconds) => {
+          const h = Math.floor(totalSeconds / 3600);
+          const m = Math.floor((totalSeconds % 3600) / 60);
+          const s = Math.floor(totalSeconds % 60);
+          return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        };
+
+        const pitSummary = store.raceData.pit.map(p => {
+          const virtualPosSec = (p.timestamp - store.playback.startTime) / 1000;
+          return {
+            "Driver #": p.driver_number,
+            "Lap": p.lap_number,
+            "Timeline Pos (H:M:S)": formatTimeline(virtualPosSec),
+            "Duration (s)": p.pit_duration,
+            "Clock Time": p.date
+          };
+        });
+        console.table(pitSummary);
       }
 
       eventBus.emit("loading:success");

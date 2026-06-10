@@ -63,6 +63,8 @@ export class Leaderboard {
       const driverNumber = String(item.dataset.driverNumber || "");
       if (!driverNumber) return;
 
+      console.log("[Leaderboard] Clicked driver:", driverNumber);
+
       if (store.ui) store.ui.selectedDriver = driverNumber;
       store.selectedDriver = driverNumber;
 
@@ -84,8 +86,21 @@ export class Leaderboard {
 
     const telemetryContainer = document.createElement("div");
     telemetryContainer.className = "inline-telemetry";
+    
+    // Ambil status pit dari position service untuk ditampilkan di detail
+    const currentTime = store.playback ? store.playback.currentTime : 0;
+    const positions = positionService.getLatestPositions(currentTime);
+    const driverPos = positions.find(p => String(p.driver_number) === String(driverNumber));
+    const pitStatusHtml = driverPos?.inPit ? `
+        <div class="pit-detail-badge">
+            <span class="pit-label">IN PIT</span>
+            <span class="pit-timer">${parseFloat(driverPos.pitStopDuration || 0).toFixed(1)}s</span>
+        </div>
+    ` : "";
+
     telemetryContainer.innerHTML = `
         <div class="telemetry-dashboard inline-mode">
+          ${pitStatusHtml}
           <div class="telemetry-top-info">
             <div id="inline-lap-time" class="telemetry-lap-time">--:--.---</div>
             <div class="tyre-indicator">
@@ -133,7 +148,6 @@ export class Leaderboard {
     row.after(telemetryContainer);
     this.recalculateRowPositions();
     
-    const currentTime = store.playback ? store.playback.currentTime : 0;
     this.updateInlineTelemetry(currentTime);
   }
 
@@ -181,6 +195,17 @@ export class Leaderboard {
         speedEl.textContent = speed;
         elements.speedPath.style.strokeDashoffset = 400 - (Math.min(speed, 360) / 360) * 400;
     }
+
+    // Update Live Pit Timer di panel detail jika sedang PIT
+    const pitTimerEl = this.listElement.querySelector(".inline-telemetry .pit-timer");
+    if (pitTimerEl) {
+        const positions = positionService.getLatestPositions(timestamp);
+        const driverPos = positions.find(p => String(p.driver_number) === String(selectedDriver));
+        if (driverPos && driverPos.inPit) {
+            pitTimerEl.textContent = `${parseFloat(driverPos.pitStopDuration || 0).toFixed(1)}s`;
+        }
+    }
+
     if (elements.rpm) elements.rpm.textContent = Math.round(data.rpm || 0);
     if (elements.gear) {
         const gearVal = Math.round(data.n_gear || 0);
@@ -282,6 +307,7 @@ export class Leaderboard {
           const pos = p.position || index + 1;
           const interval = index === 0 ? "Interval" : (p.interval || "+0.000s");
           const compound = p.tyre_compound ? p.tyre_compound.charAt(0).toUpperCase() : "S";
+          const pitText = p.inPit ? (p.pitStopDuration ? `PIT ${parseFloat(p.pitStopDuration).toFixed(1)}s` : "PIT") : "";
 
           return `
                     <div class="leaderboard-row ${String(driverNumber) === selectedDriver ? "selected" : ""} ${p.inPit ? "in-pit" : ""} ${p.status === "Retired" ? "out" : ""}"
@@ -290,7 +316,7 @@ export class Leaderboard {
                         <div class="lb-pos">${pos}</div>
                         <div class="lb-team-color" style="background-color: #${p.team_colour || '777777'}"></div>
                         <div class="lb-name">${p.name_acronym || "???"}</div>
-                        <div class="lb-gap">${interval}</div>
+                        <div class="lb-gap">${p.inPit ? `<span class="lb-pit-indicator">${pitText}</span>` : interval}</div>
                         <div class="lb-tyre tyre-${compound}">${compound}</div>
                     </div>
                 `;
@@ -325,6 +351,7 @@ export class Leaderboard {
       const pos = p.position || index + 1;
       const compound = p.tyre_compound ? p.tyre_compound.charAt(0).toUpperCase() : "S";
       const isSelected = String(driverNumber) === selectedDriver;
+      const pitText = p.inPit ? (p.pitStopDuration ? `PIT ${parseFloat(p.pitStopDuration).toFixed(1)}s` : "PIT") : "";
 
       cache.el.style.transform = `translateY(${currentY}px)`;
       currentY += 32;
@@ -343,7 +370,9 @@ export class Leaderboard {
       cache.el.dataset.pos = pos;
 
       if (cache.posEl.textContent !== String(pos)) cache.posEl.textContent = pos;
-      if (cache.gapEl.textContent !== intervalText) cache.gapEl.textContent = intervalText;
+      
+      const displayGap = p.inPit ? `<span class="lb-pit-indicator">${pitText}</span>` : intervalText;
+      if (cache.gapEl.innerHTML !== displayGap) cache.gapEl.innerHTML = displayGap;
 
       if (cache.tyreEl && cache.tyreEl.textContent !== compound) {
           cache.tyreEl.textContent = compound;

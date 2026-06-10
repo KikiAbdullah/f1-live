@@ -382,7 +382,7 @@ body {
   justify-content: center;
   align-items: center;
   z-index: 10;
-  box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9);
 }
 
 .telemetry-dashboard.inline-mode {
@@ -403,6 +403,33 @@ body {
 .telemetry-dashboard.inline-mode .speed-value {
     font-size: 3.5em;
     line-height: 1;
+}
+
+.pit-detail-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: var(--f1-red);
+    padding: 4px 12px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 20;
+    box-shadow: 0 4px 15px rgba(225, 6, 0, 0.4);
+    animation: slide-in-up 0.3s ease-out;
+}
+
+.pit-detail-badge .pit-label {
+    font-size: 0.6em;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.pit-detail-badge .pit-timer {
+    font-family: var(--font-main);
+    font-size: 1.1em;
+    font-weight: 800;
 }
 
 .telemetry-dashboard.inline-mode .rpm-value {
@@ -573,6 +600,13 @@ body {
   font-weight: 600;
   color: #fff;
   padding-right: 8px;
+  min-width: 65px;
+}
+
+.lb-pit-indicator {
+  color: #f1c40f;
+  font-weight: 800;
+  font-family: var(--font-main);
 }
 
 .lb-tyre {
@@ -601,11 +635,17 @@ body {
 }
 
 .leaderboard-row.in-pit {
-  opacity: 0.6;
+  /* Diubah agar tetap bisa diklik dan jelas terbaca */
+  background: rgba(43, 43, 43, 0.4);
+}
+
+.leaderboard-row.in-pit:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .leaderboard-row.out {
   opacity: 0.4;
+  pointer-events: none; /* Driver retired tetap tidak bisa diklik */
 }
 
 /* CENTER-LEFT PANEL: TELEMETRY & FEEDS */

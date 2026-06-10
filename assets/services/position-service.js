@@ -102,16 +102,33 @@ export const positionService = {
       }
 
       // FIX LOGIKA STATUS PIT: Memastikan pembalap dianggap di dalam pit
-      // hanya jika ia berada di lap yang sama dengan event pit stop terakhir, dan event pit tersebut belum terlalu usang
+      // hanya jika ia berada di window waktu event pit stop
       let inPit = false;
-      if (pitStop && currentLap) {
-        const pitTime = pitStop.timestamp;
-        const lapStart = currentLap.date_start
-          ? new Date(currentLap.date_start).getTime()
-          : 0;
-        // Jika waktu mobil masuk pit terjadi setelah lap ini dimulai
-        inPit =
-          pitTime >= lapStart && pitStop.lap_number === currentLap.lap_number;
+      let currentPitDuration = null;
+
+      // Cari apakah saat ini driver sedang dalam window pit stop mana pun menggunakan data global
+      const activePit = (store.raceData?.pit || []).find(p => {
+        if (String(p.driver_number) !== String(driverNum)) return false;
+        
+        const pitEntryTime = p.timestamp;
+        const totalDuration = p.pit_duration || 0;
+        const exitTime = pitEntryTime + (totalDuration * 1000);
+
+        return absoluteTimeMillis >= pitEntryTime && absoluteTimeMillis <= exitTime;
+      });
+
+      if (activePit) {
+        inPit = true;
+        currentPitDuration = (absoluteTimeMillis - activePit.timestamp) / 1000;
+        
+        // Console log saat timeline menyentuh/berada di dalam posisi PIT
+        if (!activePit._logged) {
+            console.log(`%c[PIT-START] Driver #${driverNum} MASUK PIT!`, 'background: #e10600; color: #fff; padding: 2px 5px; border-radius: 3px;');
+            activePit._logged = true;
+        }
+        console.log(`%c[PIT-ACTIVE] Driver #${driverNum} | Lap: ${activePit.lap_number} | Progress: ${currentPitDuration.toFixed(2)}s / ${activePit.pit_duration}s`, 'color: #f1c40f;');
+      } else {
+        // Reset flag log jika sudah keluar pit (opsional, tergantung struktur data)
       }
 
       positions.push({
@@ -123,6 +140,7 @@ export const positionService = {
         lapStartTime: currentLap?.date_start ? new Date(currentLap.date_start).getTime() : 0,
         absoluteTimestamp: pos.timestamp ? new Date(pos.timestamp).getTime() : 0,
         inPit: inPit,
+        pitStopDuration: currentPitDuration,
       });
     }
 
