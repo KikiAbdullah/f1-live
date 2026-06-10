@@ -93,8 +93,9 @@
             <svg class="f1-gauge-svg" viewBox="0 0 200 200">
               <defs>
                 <!-- Paths for circular text labels -->
-                <path id="throttle-text-path" d="M 68 128 A 46 46 0 0 1 100 54" />
-                <path id="brake-text-path" d="M 100 54 A 46 46 0 0 1 132 128" />
+                <path id="speed-text-path" d="M 35 155 A 82 82 0 1 1 165 155" />
+                <path id="throttle-text-path" d="M 55 140 A 60 60 0 0 1 100 40" />
+                <path id="brake-text-path" d="M 100 40 A 60 60 0 0 1 145 140" />
               </defs>
 
               <!-- Outermost: Speedometer Scale -->
@@ -110,23 +111,23 @@
               <path class="gauge-ring brake-bg" d="M 145 140 A 60 60 0 0 0 100 40" fill="none" stroke-width="14" />
               <path id="gauge-brake-path" class="gauge-ring brake-fill" d="M 145 140 A 60 60 0 0 0 100 40" fill="none" stroke-width="14" stroke-dasharray="200" stroke-dashoffset="200" />
 
-              <!-- Decorative Markers -->
+              <!-- Decorative Markers (Curved) -->
               <g class="gauge-markers">
-                <text x="35" y="170" class="marker-text">0</text>
-                <text x="15" y="110" class="marker-text">60</text>
-                <text x="35" y="55" class="marker-text">120</text>
-                <text x="100" y="22" class="marker-text">180</text>
-                <text x="165" y="55" class="marker-text">240</text>
-                <text x="185" y="110" class="marker-text">300</text>
-                <text x="165" y="170" class="marker-text">360</text>
+                <text class="marker-text"><textPath xlink:href="#speed-text-path" startOffset="0%">0</textPath></text>
+                <text class="marker-text"><textPath xlink:href="#speed-text-path" startOffset="16.6%">60</textPath></text>
+                <text class="marker-text"><textPath xlink:href="#speed-text-path" startOffset="33.3%">120</textPath></text>
+                <text class="marker-text"><textPath xlink:href="#speed-text-path" startOffset="50%">180</textPath></text>
+                <text class="marker-text"><textPath xlink:href="#speed-text-path" startOffset="66.6%">240</textPath></text>
+                <text class="marker-text"><textPath xlink:href="#speed-text-path" startOffset="83.3%">300</textPath></text>
+                <text class="marker-text"><textPath xlink:href="#speed-text-path" startOffset="100%">360</textPath></text>
               </g>
 
               <!-- Curved Labels using textPath -->
               <text class="gauge-curved-label">
-                <textPath xlink:href="#throttle-text-path" startOffset="50%" text-anchor="middle">THROTTLE</textPath>
+                <textPath xlink:href="#throttle-text-path" startOffset="50%" text-anchor="middle" dy="-8">THROTTLE</textPath>
               </text>
               <text class="gauge-curved-label">
-                <textPath xlink:href="#brake-text-path" startOffset="50%" text-anchor="middle">BRAKE</textPath>
+                <textPath xlink:href="#brake-text-path" startOffset="50%" text-anchor="middle" dy="-8">BRAKE</textPath>
               </text>
             </svg>
 

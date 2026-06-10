@@ -515,10 +515,10 @@ body {
 }
 
 .speedometer-bg { stroke: rgba(255, 255, 255, 0.05); }
-.speedometer-fill { stroke: var(--text-muted); }
+.speedometer-fill { stroke: var(--accent-blue); }
 
-.throttle-bg { stroke: rgba(0, 144, 255, 0.1); }
-.throttle-fill { stroke: var(--accent-blue); }
+.throttle-bg { stroke: rgba(46, 204, 113, 0.1); }
+.throttle-fill { stroke: #2ecc71; }
 
 .brake-bg { stroke: rgba(255, 255, 255, 0.05); }
 .brake-fill {
@@ -528,17 +528,16 @@ body {
 .brake-fill.active { stroke: var(--f1-red); }
 
 .marker-text {
-  fill: var(--text-muted);
-  font-size: 7px;
+  fill: #fff;
+  font-size: 6px;
   font-weight: 700;
-  text-anchor: middle;
   font-family: "Titillium Web", sans-serif;
-  opacity: 0.5;
+  opacity: 0.8;
 }
 
 .gauge-center-content {
   position: absolute;
-  top: 58%;
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
@@ -593,7 +592,7 @@ body {
 
 .gauge-bottom-content {
   position: absolute;
-  bottom: -19px;
+  bottom: 0px;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -646,10 +645,10 @@ body {
 }
 
 .gauge-curved-label {
-  fill: rgba(255, 255, 255, 0.9);
-  font-size: 8px;
+  fill: #fff;
+  font-size: 7px;
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   font-family: "Titillium Web", sans-serif;
   pointer-events: none;
 }
