@@ -223,11 +223,58 @@ body {
   letter-spacing: 1px;
 }
 
-.floating-lap .lap-nums {
+.leader-alert {
+  position: absolute;
+  top: 75px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  border-radius: 2px;
+  overflow: hidden;
+  z-index: 115;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 300px;
+}
+
+.leader-alert.hidden {
+  opacity: 0;
+  transform: translate(-50%, -20px) scale(0.95);
+  pointer-events: none;
+}
+
+.la-accent {
+  width: 6px;
+  height: 45px;
+  background: var(--f1-red);
+}
+
+.la-content {
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  height: 45px;
+}
+
+.la-name {
+  font-family: var(--font-main);
+  font-weight: 900;
+  font-size: 1.2em;
+  text-transform: uppercase;
+  color: var(--accent-blue);
+}
+
+.la-msg {
   font-family: var(--font-main);
   font-weight: 700;
-  font-size: 1.4em;
+  font-size: 1.1em;
+  letter-spacing: 1px;
   color: #fff;
+  opacity: 0.9;
 }
 
 #toggle-session-loader {
@@ -317,24 +364,137 @@ body {
   position: relative;
 }
 
+#driver-info-panel {
+    display: none !important;
+}
+
+.inline-telemetry {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 240px;
+  background: #0e0e12;
+  border-bottom: 2px solid var(--f1-red);
+  overflow: hidden;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
+}
+
+.telemetry-dashboard.inline-mode {
+  padding: 0;
+  background: transparent;
+  transform: scale(0.65);
+  transform-origin: center center;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 280px;
+  height: 240px;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.telemetry-dashboard.inline-mode .speed-value {
+    font-size: 3.5em;
+    line-height: 1;
+}
+
+.telemetry-dashboard.inline-mode .rpm-value {
+    font-size: 1.4em;
+    color: var(--text-muted);
+}
+
+.telemetry-dashboard.inline-mode .telemetry-lap-time {
+    font-size: 1.1em;
+    padding: 2px 12px;
+}
+
+.telemetry-dashboard.inline-mode * {
+    visibility: visible !important;
+}
+
+.telemetry-dashboard.inline-mode .telemetry-top-info {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-bottom: -15px;
+}
+
+.telemetry-dashboard.inline-mode .main-gauge-container {
+    width: 280px;
+    height: 240px;
+}
+
+.telemetry-dashboard.inline-mode .speed-value {
+    font-size: 3.2em;
+}
+
+.telemetry-dashboard.inline-mode .gear-value {
+    font-size: 2.2em;
+}
+
+.telemetry-dashboard.inline-mode .rpm-value {
+    font-size: 1.2em;
+}
+
+.telemetry-dashboard.inline-mode .marker-text {
+    font-size: 8px;
+}
+
 /* LEFT SIDEBAR: LEADERBOARD */
 .sidebar-leaderboard {
-  width: 110px;
-  background-color: #0e0e12;
+  width: 145px;
+  background: linear-gradient(180deg, #1f1f27 0%, #0e0e12 100%);
   border-right: 1px solid var(--border-grey);
   display: flex;
   flex-direction: column;
 }
 
-.sidebar-header {
+.sidebar-f1-logo {
   padding: 10px;
-  font-size: 0.7em;
-  font-weight: 800;
-  color: var(--text-muted);
-  text-align: center;
-  border-bottom: 1px solid var(--border-grey);
-  letter-spacing: 1px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: #15151e;
+}
+
+.sidebar-f1-logo img {
+  height: 35px;
+  filter: brightness(0) invert(1);
+}
+
+.lap-header-box {
+  background: rgba(0, 0, 0, 0.4) !important;
+  color: #fff !important;
+  padding: 8px 10px !important;
+  display: flex !important;
+  justify-content: center;
+  align-items: baseline;
+  gap: 6px;
+  height: auto !important;
   text-transform: uppercase;
+  font-family: var(--font-main);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lap-header-box .lap-label {
+  font-weight: 400;
+  font-size: 0.75em;
+  opacity: 0.8;
+  letter-spacing: 1px;
+}
+
+.lap-header-box .lap-nums {
+  font-weight: 700;
+  font-size: 0.95em;
 }
 
 .leaderboard-container {
@@ -354,61 +514,98 @@ body {
   width: 100%;
   display: flex;
   align-items: center;
-  height: 40px;
-  border-bottom: 1px solid #1a1a22;
+  height: 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   cursor: pointer;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s;
-  padding: 0 8px;
+  padding: 0;
+  overflow: hidden;
 }
 
 .leaderboard-row:hover {
-  background: #1a1a22;
+  background: rgba(255, 255, 255, 0.05);
 }
+
 .leaderboard-row.selected {
-  background: #22222b;
-  border-left: 4px solid var(--f1-red);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .lb-pos {
-  width: 25px;
-  font-size: 0.8em;
+  width: 22px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75em;
   font-weight: 700;
-  color: var(--text-muted);
-  text-align: right;
-  margin-right: 10px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.3);
+  margin-right: 4px;
+}
+
+.leaderboard-row[data-pos="1"] .lb-pos {
+  background: var(--f1-red);
+}
+
+.lb-team-color {
+  width: 4px;
+  height: 18px;
+  border-radius: 1px;
+  margin-right: 8px;
+  margin-left: 4px;
+}
+
+.lb-name {
+  font-family: var(--font-main);
+  font-weight: 800;
+  font-size: 0.8em;
+  letter-spacing: 0.2px;
+  color: #fff;
+  margin-left: 4px;
+  text-transform: uppercase;
 }
 
 .lb-gap {
   flex: 1;
   text-align: right;
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 0.75em;
-  color: var(--text-muted);
-  padding-right: 5px;
+  font-weight: 600;
+  color: #fff;
+  padding-right: 8px;
 }
+
+.lb-tyre {
+  width: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-main);
+  font-weight: 900;
+  font-size: 0.65em;
+  margin-right: 4px;
+}
+
+.tyre-S { color: var(--f1-red); }
+.tyre-M { color: #f1c40f; }
+.tyre-H { color: #ffffff; }
+.tyre-I { color: #2ecc71; }
+.tyre-W { color: #3498db; }
 
 .lb-team-stripe {
-  width: 4px;
-  height: 18px;
-  border-radius: 1px;
-  margin-right: 10px;
-}
-
-.lb-name {
-  font-weight: 700;
-  font-size: 0.9em;
-  letter-spacing: 0.5px;
+  display: none; /* Replaced by logo */
 }
 
 .lb-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  margin-left: auto;
+  display: none;
 }
 
 .leaderboard-row.in-pit {
-  background: rgba(225, 6, 0, 0.08);
+  opacity: 0.6;
+}
+
+.leaderboard-row.out {
+  opacity: 0.4;
 }
 
 /* CENTER-LEFT PANEL: TELEMETRY & FEEDS */
@@ -1251,9 +1448,6 @@ body {
   flex-direction: column;
 }
 
-.leaderboard-row {
-  height: 46px;
-}
 
 .leaderboard-row:hover {
   background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent);

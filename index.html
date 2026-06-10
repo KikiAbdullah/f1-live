@@ -55,7 +55,15 @@
       </div>
 
       <aside class="sidebar-leaderboard">
-        <div class="sidebar-header">Positions</div>
+        <div class="sidebar-f1-logo">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/3/33/F1.svg" alt="F1 Logo" />
+        </div>
+        <div class="sidebar-header lap-header-box">
+          <span class="lap-label">LAP</span>
+          <span class="lap-nums">
+            <span id="current-lap">1</span> / <span id="total-laps">--</span>
+          </span>
+        </div>
         <div id="leaderboard" class="leaderboard-container"></div>
       </aside>
 
@@ -160,12 +168,13 @@
       <main class="track-viewport">
         <canvas id="track-map"></canvas>
         
-        <!-- Top Center Lap Counter -->
-        <div class="lap-counter-box floating-lap">
-          <span class="lap-label">LAP</span>
-          <span class="lap-nums">
-            <span id="current-lap">1</span> / <span id="total-laps">--</span>
-          </span>
+        <!-- Leader Change Alert -->
+        <div id="leader-alert" class="leader-alert hidden">
+          <div class="la-accent"></div>
+          <div class="la-content">
+            <span id="la-driver-name" class="la-name">RUSSELL</span>
+            <span class="la-msg">NEW RACE LEADER</span>
+          </div>
         </div>
         
         <!-- Floating Weather Widget -->
