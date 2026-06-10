@@ -81,48 +81,72 @@
         </div>
 
         <div class="telemetry-dashboard">
-          <div class="gauge-main">
-            <svg class="gauge-svg" viewBox="0 0 100 100" aria-hidden="true">
-              <circle class="gauge-bg" cx="50" cy="50" r="45"></circle>
-              <circle
-                id="telemetry-gauge-fill"
-                class="gauge-fill"
-                cx="50"
-                cy="50"
-                r="45"
-                stroke-dasharray="0 283"
-              ></circle>
+          <div class="telemetry-top-info">
+            <div id="telemetry-lap-time" class="telemetry-lap-time">--:--.---</div>
+            <div class="tyre-indicator">
+              <span class="tyre-life">--</span>
+              <span class="tyre-compound compound-s">S</span>
+            </div>
+          </div>
+
+          <div class="main-gauge-container">
+            <svg class="f1-gauge-svg" viewBox="0 0 200 200">
+              <defs>
+                <!-- Paths for circular text labels -->
+                <path id="throttle-text-path" d="M 68 128 A 46 46 0 0 1 100 54" />
+                <path id="brake-text-path" d="M 100 54 A 46 46 0 0 1 132 128" />
+              </defs>
+
+              <!-- Outermost: Speedometer Scale -->
+              <path class="gauge-ring speedometer-bg" d="M 35 155 A 82 82 0 1 1 165 155" fill="none" stroke-width="14" />
+              <path id="gauge-speed-path" class="gauge-ring speedometer-fill" d="M 35 155 A 82 82 0 1 1 165 155" fill="none" stroke-width="14" stroke-dasharray="400" stroke-dashoffset="400" />
+
+              <!-- Inner: Symmetrical Throttle & Brake -->
+              <!-- Left: Throttle -->
+              <path class="gauge-ring throttle-bg" d="M 55 140 A 60 60 0 0 1 100 40" fill="none" stroke-width="14" />
+              <path id="gauge-throttle-path" class="gauge-ring throttle-fill" d="M 55 140 A 60 60 0 0 1 100 40" fill="none" stroke-width="14" stroke-dasharray="200" stroke-dashoffset="200" />
+
+              <!-- Right: Brake -->
+              <path class="gauge-ring brake-bg" d="M 145 140 A 60 60 0 0 0 100 40" fill="none" stroke-width="14" />
+              <path id="gauge-brake-path" class="gauge-ring brake-fill" d="M 145 140 A 60 60 0 0 0 100 40" fill="none" stroke-width="14" stroke-dasharray="200" stroke-dashoffset="200" />
+
+              <!-- Decorative Markers -->
+              <g class="gauge-markers">
+                <text x="35" y="170" class="marker-text">0</text>
+                <text x="15" y="110" class="marker-text">60</text>
+                <text x="35" y="55" class="marker-text">120</text>
+                <text x="100" y="22" class="marker-text">180</text>
+                <text x="165" y="55" class="marker-text">240</text>
+                <text x="185" y="110" class="marker-text">300</text>
+                <text x="165" y="170" class="marker-text">360</text>
+              </g>
+
+              <!-- Curved Labels using textPath -->
+              <text class="gauge-curved-label">
+                <textPath xlink:href="#throttle-text-path" startOffset="50%" text-anchor="middle">THROTTLE</textPath>
+              </text>
+              <text class="gauge-curved-label">
+                <textPath xlink:href="#brake-text-path" startOffset="50%" text-anchor="middle">BRAKE</textPath>
+              </text>
             </svg>
-            <div class="gauge-center-info">
-              <span class="speed-num" id="telemetry-speed">0</span>
-              <span class="speed-unit">KM/H</span>
-              <span class="rpm-text" id="telemetry-rpm">0 RPM</span>
-            </div>
-          </div>
 
-          <div class="pedal-inputs">
-            <div class="pedal-box">
-              <div class="vertical-bar-bg">
-                <div id="telemetry-throttle" class="bar-fill throttle-fill"></div>
+            <div class="gauge-center-content">
+              <div class="speed-display">
+                <span id="telemetry-speed" class="speed-value">0</span>
+                <span class="speed-unit">KM/H</span>
               </div>
-              <span class="pedal-label">Throttle</span>
-            </div>
-            <div class="pedal-box">
-              <div class="vertical-bar-bg">
-                <div id="telemetry-brake" class="bar-fill brake-fill"></div>
+              <div class="rpm-display">
+                <span id="telemetry-rpm" class="rpm-value">0</span>
+                <span class="rpm-unit">RPM</span>
               </div>
-              <span class="pedal-label">Brake</span>
             </div>
-          </div>
 
-          <div class="tech-stats">
-            <div class="stat-card">
-              <span class="stat-label">Gear</span>
-              <span class="stat-val" id="telemetry-gear">0</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-label">DRS</span>
-              <span class="stat-val" id="telemetry-drs">OFF</span>
+            <div class="gauge-bottom-content">
+              <div id="telemetry-drs" class="drs-status">DRS</div>
+              <div class="gear-display">
+                <span class="gear-label">GEAR</span>
+                <span id="telemetry-gear" class="gear-value">N</span>
+              </div>
             </div>
           </div>
         </div>

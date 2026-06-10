@@ -30,9 +30,10 @@ const ui = {
   rpm: byId("telemetry-rpm"),
   gear: byId("telemetry-gear"),
   drs: byId("telemetry-drs"),
-  throttle: byId("telemetry-throttle"),
-  brake: byId("telemetry-brake"),
-  gauge: byId("telemetry-gauge-fill"),
+  lapTime: byId("telemetry-lap-time"),
+  speedPath: byId("gauge-speed-path"),
+  throttlePath: byId("gauge-throttle-path"),
+  brakePath: byId("gauge-brake-path"),
 };
 
 window.F1Live = { store, eventBus, telemetryService };
@@ -134,17 +135,50 @@ function updateTelemetry(timestamp) {
   const throttle = clamp(Number(telemetry.throttle) || 0, 0, 100);
   const brake = clamp(Number(telemetry.brake) || 0, 0, 100);
   const isDrsActive = Number(telemetry.drs) >= 10;
-  const circumference = 283;
-  const dashArray = clamp(speed / 360, 0, 1) * circumference;
+  const gearValue = Math.round(Number(telemetry.n_gear) || 0);
+  const gear = gearValue === 0 ? "N" : gearValue === -1 ? "R" : gearValue;
 
+  // Update text values
   ui.speed.textContent = speed;
-  ui.rpm.textContent = `${rpm.toLocaleString("id-ID")} RPM`;
-  ui.gear.textContent = Math.round(telemetry.n_gear || 0);
-  ui.drs.textContent = isDrsActive ? "ON" : "OFF";
-  ui.drs.classList.toggle("drs-active", isDrsActive);
-  ui.throttle.style.height = `${throttle}%`;
-  ui.brake.style.height = `${brake}%`;
-  ui.gauge.setAttribute("stroke-dasharray", `${dashArray} ${circumference}`);
+  ui.rpm.textContent = rpm.toLocaleString("id-ID");
+  ui.gear.textContent = gear;
+  
+  // Update DRS
+  ui.drs.classList.toggle("active", isDrsActive);
+
+  // SVG Gauge Updates
+  // Speedometer (outer): dasharray 400
+  if (ui.speedPath) {
+    const maxSpeed = 360;
+    const speedDash = 400;
+    const speedOffset = speedDash - (clamp(speed, 0, maxSpeed) / maxSpeed) * speedDash;
+    ui.speedPath.style.strokeDashoffset = speedOffset;
+  }
+
+  // Throttle (inner left): dasharray 200
+  if (ui.throttlePath) {
+    const throttleDash = 200;
+    const throttleOffset = throttleDash - (throttle / 100) * throttleDash;
+    ui.throttlePath.style.strokeDashoffset = throttleOffset;
+  }
+  
+  // Brake (inner right): dasharray 200
+  if (ui.brakePath) {
+    const brakeDash = 200;
+    const brakeOffset = brakeDash - (brake / 100) * brakeDash;
+    ui.brakePath.style.strokeDashoffset = brakeOffset;
+    ui.brakePath.classList.toggle("active", brake > 1);
+  }
+
+  // Lap time display if available in store
+  const currentLapData = store.raceData?.laps?.find(l => 
+    String(l.driver_number) === String(store.ui.selectedDriver) && 
+    l.lap_number === Number(ui.currentLap.textContent)
+  );
+  if (currentLapData && ui.lapTime) {
+    ui.lapTime.textContent = currentLapData.lap_duration ? 
+      currentLapData.lap_duration.toFixed(3) : "--:--.---";
+  }
 }
 
 function bindChrome() {
