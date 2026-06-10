@@ -105,7 +105,11 @@ function selectDriver(driverNumber) {
   );
   if (!driver) return;
 
-  ui.infoPanel?.classList.add("visible");
+  // Pastikan infoPanel ditampilkan
+  if (ui.infoPanel) {
+    ui.infoPanel.classList.add("visible");
+  }
+
   ui.driverName.textContent = driver.broadcast_name || driver.full_name || driver.name_acronym;
   ui.teamName.textContent = driver.team_name || "Independent";
   ui.avatar.src =

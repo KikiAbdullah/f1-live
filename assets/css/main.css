@@ -338,6 +338,15 @@ body {
   margin-right: 10px;
 }
 
+.lb-gap {
+  flex: 1;
+  text-align: right;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75em;
+  color: var(--text-muted);
+  padding-right: 5px;
+}
+
 .lb-team-stripe {
   width: 4px;
   height: 18px;
@@ -903,7 +912,11 @@ body {
 }
 
 .sidebar-leaderboard {
-  width: 148px;
+  width: 175px;
+  background-color: #0e0e12;
+  border-right: 1px solid var(--border-grey);
+  display: flex;
+  flex-direction: column;
 }
 
 .leaderboard-row {

@@ -120,11 +120,7 @@ export const positionService = {
         date: pos.date,
         lastLapTime: currentLap?.lap_duration || null,
         currentLapNumber: currentLap?.lap_number || 0,
-        // Gunakan lap_number sebagai basis perhitungan kasar jika duration_s tidak konsisten di OpenF1
-        totalLapsCompleted: currentLap?.lap_number
-          ? currentLap.lap_number - 1
-          : 0,
-        totalLapTime: currentLap?.duration_s || 0,
+        lapStartTime: currentLap?.date_start ? new Date(currentLap.date_start).getTime() : 0,
         inPit: inPit,
       });
     }
@@ -135,8 +131,8 @@ export const positionService = {
     // HITUNG GAP / INTERVAL ANTAR PEMBALAP secara aman
     if (positions.length > 0) {
       const leader = positions[0];
-      leader.gap = "LEADER";
-      leader.interval = "LEADER";
+      leader.gap = "INTERVAL";
+      leader.interval = "INTERVAL";
 
       for (let i = 1; i < positions.length; i++) {
         const p = positions[i];
@@ -148,9 +144,9 @@ export const positionService = {
         if (lapDeficit > 0) {
           p.gap = `+${lapDeficit} ${lapDeficit === 1 ? "Lap" : "Laps"}`;
         } else {
-          // Hitung selisih waktu secara presisi jika berada di lap yang sama
-          const gapTime = p.totalLapTime - leader.totalLapTime;
-          p.gap = gapTime > 0 ? `+${gapTime.toFixed(3)}s` : "--";
+          // Hitung selisih waktu berdasarkan waktu crossing garis start/finish terakhir
+          const gapTime = (p.lapStartTime - leader.lapStartTime) / 1000;
+          p.gap = gapTime > 0 ? `+${gapTime.toFixed(3)}s` : "+0.000s";
         }
 
         // Hitung interval ke mobil tepat di depannya
@@ -160,8 +156,8 @@ export const positionService = {
             intervalDeficit === 1 ? "Lap" : "Laps"
           }`;
         } else {
-          const intervalTime = p.totalLapTime - prev.totalLapTime;
-          p.interval = intervalTime > 0 ? `+${intervalTime.toFixed(3)}s` : "--";
+          const intervalTime = (p.lapStartTime - prev.lapStartTime) / 1000;
+          p.interval = intervalTime > 0 ? `+${intervalTime.toFixed(3)}s` : "+0.000s";
         }
       }
     }

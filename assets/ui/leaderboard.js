@@ -113,6 +113,7 @@ export class Leaderboard {
         .map((p) => {
           const driverNumber = p.driver_number || "";
           const teamColour = p.team_colour || "777777";
+          const gap = p.gap || "--";
 
           return `
                     <div class="leaderboard-row ${
@@ -123,7 +124,8 @@ export class Leaderboard {
                          data-driver-number="${driverNumber}">
                         <div class="lb-pos">${p.position || "-"}</div>
                         <div class="lb-team-stripe" style="background-color: #${teamColour}"></div>
-                        <div class="lb-name">${p.broadcast_name || "Unknown"}</div>
+                        <div class="lb-name">${p.name_acronym || p.broadcast_name || "???"}</div>
+                        <div class="lb-gap">${gap}</div>
                         <div class="lb-status-dot" style="background-color: ${p.inPit ? "var(--f1-red)" : "transparent"}"></div>
                     </div>
                 `;
@@ -136,6 +138,8 @@ export class Leaderboard {
       ).map((el) => ({
         el,
         posEl: el.querySelector(".lb-pos"),
+        nameEl: el.querySelector(".lb-name"),
+        gapEl: el.querySelector(".lb-gap"),
         dotEl: el.querySelector(".lb-status-dot"),
       }));
       return;
@@ -144,9 +148,11 @@ export class Leaderboard {
     // OPTIMASI: Fast update (DOM Diffing) - Hanya update text/class, jangan buat ulang HTML
     positions.forEach((p, index) => {
       const cache = this.cachedItems[index];
-      const driverNumber = String(p.driver_number || "");
+      if (!cache) return;
 
-      // Cek status Pit dan Selected
+      const driverNumber = String(p.driver_number || "");
+      const isLeader = index === 0;
+      const gapText = isLeader ? "INTERVAL" : String(p.gap || "--");
       const inPit = !!p.inPit;
       const isSelected = String(driverNumber) === selectedDriver;
 
@@ -165,10 +171,18 @@ export class Leaderboard {
 
       if (cache.posEl.textContent !== posText)
         cache.posEl.textContent = posText;
+      if (cache.gapEl.textContent !== gapText)
+        cache.gapEl.textContent = gapText;
 
       // Memastikan dataset tidak tertinggal jika urutan array berubah
       if (cache.el.dataset.driverNumber !== driverNumber) {
         cache.el.dataset.driverNumber = driverNumber;
+        const nameText = p.name_acronym || p.broadcast_name || "???";
+        if (cache.nameEl.textContent !== nameText) cache.nameEl.textContent = nameText;
+        
+        const teamColour = p.team_colour || "777777";
+        const stripe = cache.el.querySelector(".lb-team-stripe");
+        if (stripe) stripe.style.backgroundColor = `#${teamColour}`;
       }
     });
   }

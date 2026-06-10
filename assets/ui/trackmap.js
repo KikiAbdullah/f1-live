@@ -23,12 +23,14 @@ export class TrackMap {
 
     this.trackCanvas = null;
     this.resizeObserver = null;
-    this.driverCache = new Map(); // Mengoptimalkan pencarian data pembalap secara instan
+    this.driverCache = new Map();
+    this.driverMarkers = new Map(); // Store screen coordinates for hit testing
 
-    // Bind methods agar aman saat dicopot pada fungsi destroy()
+    // Bind methods
     this.handlePlaybackUpdate = this.handlePlaybackUpdate.bind(this);
     this.handleSessionReady = this.handleSessionReady.bind(this);
     this.handleDriverSelection = this.handleDriverSelection.bind(this);
+    this.handleClick = this.handleClick.bind(this);
 
     this.init();
   }
@@ -37,6 +39,8 @@ export class TrackMap {
     eventBus.on("playback:update", this.handlePlaybackUpdate);
     eventBus.on("session:ready", this.handleSessionReady);
     eventBus.on("driver:selected", this.handleDriverSelection);
+
+    this.canvas.addEventListener("click", this.handleClick);
 
     // FIX: Pasang ResizeObserver agar peta otomatis presisi saat ukuran layar berubah
     if (this.canvas.parentElement) {
@@ -114,25 +118,19 @@ export class TrackMap {
 
     const dataWidth = this.bounds.maxX - this.bounds.minX;
     const dataHeight = this.bounds.maxY - this.bounds.minY;
-    const dataAspectRatio = dataWidth / dataHeight;
-    const canvasAspectRatio = this.canvas.width / this.canvas.height;
+    
+    // Gunakan uniform scaling (rasio aspek yang sama untuk X dan Y agar tidak gepeng)
+    const scale = Math.min(
+      (this.canvas.width * 0.9) / dataWidth,
+      (this.canvas.height * 0.9) / dataHeight
+    );
 
-    let renderWidth, renderHeight;
-    this.offsetX = 0;
-    this.offsetY = 0;
+    this.scaleX = scale;
+    this.scaleY = scale;
 
-    if (dataAspectRatio > canvasAspectRatio) {
-      renderWidth = this.canvas.width;
-      renderHeight = renderWidth / dataAspectRatio;
-      this.offsetY = (this.canvas.height - renderHeight) / 2;
-    } else {
-      renderHeight = this.canvas.height;
-      renderWidth = renderHeight * dataAspectRatio;
-      this.offsetX = (this.canvas.width - renderWidth) / 2;
-    }
-
-    this.scaleX = renderWidth / dataWidth;
-    this.scaleY = renderHeight / dataHeight;
+    // Hitung offset agar sirkuit berada di tengah canvas
+    this.offsetX = (this.canvas.width - dataWidth * scale) / 2;
+    this.offsetY = (this.canvas.height - dataHeight * scale) / 2;
   }
 
   // Fungsi helper transformasi koordinat sirkuit F1 ke pixel koordinat Canvas
@@ -147,13 +145,47 @@ export class TrackMap {
     return this.canvas.height / 2 + (baseY - this.canvas.height / 2) * this.zoom;
   }
 
+  handleClick(event) {
+    const rect = this.canvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    let clickedDriver = null;
+    let minDistance = 20; // Radius toleransi klik dalam pixel
+
+    for (const [driverNumber, pos] of this.driverMarkers.entries()) {
+      const dx = mouseX - pos.x;
+      const dy = mouseY - pos.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        clickedDriver = driverNumber;
+      }
+    }
+
+    if (clickedDriver) {
+      eventBus.emit("driver:selected", clickedDriver);
+    }
+  }
+
   preRenderTrack() {
     if (this.bounds.minX === Infinity) return;
 
+    // Untuk menghindari clipping saat zoom, kita buat trackCanvas lebih besar dari canvas utama
+    // atau kita render dinamis. Namun pre-render lebih efisien. 
+    // Strategi baru: trackCanvas akan berukuran 3x canvas utama untuk ruang zoom.
+    const bufferScale = 3;
     this.trackCanvas = document.createElement("canvas");
-    this.trackCanvas.width = this.canvas.width;
-    this.trackCanvas.height = this.canvas.height;
+    this.trackCanvas.width = this.canvas.width * bufferScale;
+    this.trackCanvas.height = this.canvas.height * bufferScale;
     const tCtx = this.trackCanvas.getContext("2d");
+    
+    // Simpan context untuk mempermudah koordinat di tengah
+    tCtx.translate(
+        (this.trackCanvas.width - this.canvas.width) / 2,
+        (this.trackCanvas.height - this.canvas.height) / 2
+    );
 
     // Cari pembalap pertama mana saja yang datanya lengkap untuk ditarik sebagai basis garis sirkuit
     let trackPoints = null;
@@ -438,14 +470,18 @@ export class TrackMap {
     // Bersihkan area frame canvas utama
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Cetak background sirkuit statis dari offscreen canvas (Sangat Cepat!)
+    // Cetak background sirkuit statis
     if (this.trackCanvas) {
-      this.ctx.drawImage(this.trackCanvas, 0, 0);
+      const drawX = -(this.trackCanvas.width - this.canvas.width) / 2;
+      const drawY = -(this.trackCanvas.height - this.canvas.height) / 2;
+      this.ctx.drawImage(this.trackCanvas, drawX, drawY);
     }
 
     const activeSelectedDriver = String(
       store.ui?.selectedDriver ?? store.selectedDriver ?? ""
     );
+
+    this.driverMarkers.clear();
 
     // Render dot lingkaran kecil penanda posisi mobil masing-masing pembalap
     for (const [driverNumber, loc] of Object.entries(currentLocations)) {
@@ -460,6 +496,7 @@ export class TrackMap {
       const y = this.transformY(loc.y);
       const isSelected = String(driverNumber) === activeSelectedDriver;
 
+      this.driverMarkers.set(String(driverNumber), { x, y });
       this.drawDriverMarker(x, y, teamColor, acronym, isSelected);
     }
   }
@@ -535,6 +572,8 @@ export class TrackMap {
     eventBus.off("playback:update", this.handlePlaybackUpdate);
     eventBus.off("session:ready", this.handleSessionReady);
     eventBus.off("driver:selected", this.handleDriverSelection);
+
+    this.canvas.removeEventListener("click", this.handleClick);
 
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
