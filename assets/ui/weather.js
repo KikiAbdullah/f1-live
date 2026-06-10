@@ -33,41 +33,69 @@ export class WeatherDisplay {
     if (!this.container) return;
 
     this.container.innerHTML = `
-      <div class="weather-info">
-        <div class="weather-item">
-          <span class="weather-label">Air</span>
-          <span id="weather-air-temp" class="weather-value">--°C</span>
+      <div class="w-cond-header">WEATHER CONDITIONS</div>
+      <div class="w-cond-main-sec">
+        <div class="w-cond-bg-art"></div>
+        <div class="w-cond-status" id="weather-status-text">DRY</div>
+        <div class="w-cond-temp">
+          <span id="weather-air-temp" class="w-temp-c">--°C</span>
+          <span id="weather-air-temp-f" class="w-temp-f">--°F</span>
         </div>
-        <div class="weather-item">
-          <span class="weather-label">Track</span>
-          <span id="weather-track-temp" class="weather-value">--°C</span>
+      </div>
+      
+      <div class="w-cond-details">
+        <div class="w-cond-row">
+          <div class="w-row-label">TRACK TEMP</div>
+          <div class="w-row-content">
+            <div class="w-icon-therm"></div>
+            <div class="w-data-wrap">
+              <div class="w-data-main">
+                <span id="weather-track-temp">--°C</span>
+                <span id="weather-track-temp-f" class="w-sub-val">--°F</span>
+              </div>
+              <div class="w-data-desc" id="weather-track-desc">NORMAL</div>
+            </div>
+          </div>
         </div>
-        <div class="weather-item">
-          <span class="weather-label">Wind</span>
-          <span id="weather-wind-speed" class="weather-value">-- km/h</span>
+
+        <div class="w-cond-row">
+          <div class="w-row-label">HUMIDITY</div>
+          <div class="w-row-content">
+            <div class="w-icon-drop"></div>
+            <div class="w-data-wrap">
+              <div class="w-data-main" id="weather-humidity">--%</div>
+              <div class="w-data-desc" id="weather-humidity-desc">OPTIMAL</div>
+            </div>
+          </div>
         </div>
-        <div class="weather-item">
-          <span class="weather-label">Dir</span>
-          <span id="weather-wind-direction" class="weather-value">--</span>
-        </div>
-        <div class="weather-item">
-          <span class="weather-label">Humidity</span>
-          <span id="weather-humidity" class="weather-value">--%</span>
-        </div>
-        <div class="weather-item">
-          <span class="weather-label">Pressure</span>
-          <span id="weather-pressure" class="weather-value">-- hPa</span>
+
+        <div class="w-cond-row">
+          <div class="w-row-label">WIND</div>
+          <div class="w-row-content">
+            <div class="w-icon-wind"></div>
+            <div class="w-data-wrap">
+              <div class="w-data-main">
+                <span id="weather-wind-speed">--</span>
+                <span class="w-unit-sm">KM/H</span>
+              </div>
+              <div class="w-data-desc" id="weather-wind-direction">NORTH</div>
+            </div>
+          </div>
         </div>
       </div>
     `;
 
     this.elements = {
+      status: document.getElementById("weather-status-text"),
       airTemp: document.getElementById("weather-air-temp"),
+      airTempF: document.getElementById("weather-air-temp-f"),
       trackTemp: document.getElementById("weather-track-temp"),
+      trackTempF: document.getElementById("weather-track-temp-f"),
+      trackDesc: document.getElementById("weather-track-desc"),
       windSpeed: document.getElementById("weather-wind-speed"),
       windDirection: document.getElementById("weather-wind-direction"),
       humidity: document.getElementById("weather-humidity"),
-      pressure: document.getElementById("weather-pressure"),
+      humidityDesc: document.getElementById("weather-humidity-desc"),
     };
   }
 
@@ -79,13 +107,32 @@ export class WeatherDisplay {
       return;
     }
 
-    this.elements.airTemp.textContent = `${this.valueOrDash(weatherData.air_temp)}°C`;
-    this.elements.trackTemp.textContent = `${this.valueOrDash(weatherData.track_temp)}°C`;
-    this.elements.windSpeed.textContent = `${this.valueOrDash(weatherData.wind_speed)} km/h`;
-    this.elements.windDirection.textContent =
-      weatherData.wind_direction !== undefined ? `${weatherData.wind_direction}°` : "--";
-    this.elements.humidity.textContent = `${this.valueOrDash(weatherData.humidity)}%`;
-    this.elements.pressure.textContent = `${this.valueOrDash(weatherData.pressure)} hPa`;
+    const airC = Math.round(weatherData.air_temp || 0);
+    const airF = Math.round((airC * 9) / 5 + 32);
+    const trackC = Math.round(weatherData.track_temp || 0);
+    const trackF = Math.round((trackC * 9) / 5 + 32);
+    const rain = Number(weatherData.rainfall) > 0;
+
+    this.elements.status.textContent = rain ? "RAIN" : "DRY";
+    this.elements.status.className = `w-cond-status ${rain ? "status-rain" : "status-dry"}`;
+    
+    this.elements.airTemp.textContent = `${airC}°C`;
+    this.elements.airTempF.textContent = `${airF}°F`;
+    this.elements.trackTemp.textContent = `${trackC}°C`;
+    this.elements.trackTempF.textContent = `${trackF}°F`;
+    
+    this.elements.trackDesc.textContent = trackC > 40 ? "HIGH" : trackC < 20 ? "LOW" : "NORMAL";
+    this.elements.humidity.textContent = `${Math.round(weatherData.humidity)}%`;
+    this.elements.humidityDesc.textContent = weatherData.humidity > 70 ? "HIGH" : "OPTIMAL";
+    
+    this.elements.windSpeed.textContent = weatherData.wind_speed || "0.0";
+    this.elements.windDirection.textContent = this.getWindDirectionName(weatherData.wind_direction);
+  }
+
+  getWindDirectionName(degree) {
+    if (degree === undefined || degree === null) return "NORTH";
+    const sectors = ["NORTH", "NORTH EAST", "EAST", "SOUTH EAST", "SOUTH", "SOUTH WEST", "WEST", "NORTH WEST"];
+    return sectors[Math.round(degree / 45) % 8];
   }
 
   valueOrDash(value) {

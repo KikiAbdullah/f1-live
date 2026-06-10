@@ -162,6 +162,12 @@
 
       <main class="track-viewport">
         <canvas id="track-map"></canvas>
+        
+        <!-- Floating Weather Widget -->
+        <div class="weather-floating" id="weather-display">
+          <!-- Content injected by weather.js -->
+        </div>
+
         <div class="map-tools">
           <button class="tool-btn" id="center-map" title="Center Map">⌖</button>
           <button class="tool-btn" id="zoom-in" title="Zoom In">＋</button>
@@ -190,17 +196,6 @@
             <option value="10">10x Speed</option>
             <option value="20">20x Speed</option>
           </select>
-        </div>
-
-        <div class="weather-widget" id="weather-display">
-          <div class="w-item">
-            <span class="w-label">AIR</span>
-            <span class="w-val" id="air-temp">--°C</span>
-          </div>
-          <div class="w-item">
-            <span class="w-label">TRACK</span>
-            <span class="w-val" id="track-temp">--°C</span>
-          </div>
         </div>
 
         <div class="rolex-logo">
