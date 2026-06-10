@@ -110,10 +110,10 @@ export class Leaderboard {
 
     if (!this.cachedItems || this.cachedItems.length !== positions.length) {
       this.listElement.innerHTML = positions
-        .map((p) => {
+        .map((p, index) => {
           const driverNumber = p.driver_number || "";
           const teamColour = p.team_colour || "777777";
-          const gap = p.gap || "--";
+          const interval = index === 0 ? "INTERVAL" : (p.interval || "--");
 
           return `
                     <div class="leaderboard-row ${
@@ -121,11 +121,12 @@ export class Leaderboard {
                         ? "selected"
                         : ""
                     } ${p.inPit ? "in-pit" : ""}"
-                         data-driver-number="${driverNumber}">
+                         data-driver-number="${driverNumber}"
+                         style="transform: translateY(${index * 40}px)">
                         <div class="lb-pos">${p.position || "-"}</div>
                         <div class="lb-team-stripe" style="background-color: #${teamColour}"></div>
                         <div class="lb-name">${p.name_acronym || p.broadcast_name || "???"}</div>
-                        <div class="lb-gap">${gap}</div>
+                        <div class="lb-gap">${interval}</div>
                         <div class="lb-status-dot" style="background-color: ${p.inPit ? "var(--f1-red)" : "transparent"}"></div>
                     </div>
                 `;
@@ -152,7 +153,11 @@ export class Leaderboard {
 
       const driverNumber = String(p.driver_number || "");
       const isLeader = index === 0;
-      const gapText = isLeader ? "INTERVAL" : String(p.gap || "--");
+      const intervalText = isLeader ? "INTERVAL" : String(p.interval || "--");
+      
+      // Update posisi animasi
+      cache.el.style.transform = `translateY(${index * 40}px)`;
+
       const inPit = !!p.inPit;
       const isSelected = String(driverNumber) === selectedDriver;
 
@@ -171,8 +176,8 @@ export class Leaderboard {
 
       if (cache.posEl.textContent !== posText)
         cache.posEl.textContent = posText;
-      if (cache.gapEl.textContent !== gapText)
-        cache.gapEl.textContent = gapText;
+      if (cache.gapEl.textContent !== intervalText)
+        cache.gapEl.textContent = intervalText;
 
       // Memastikan dataset tidak tertinggal jika urutan array berubah
       if (cache.el.dataset.driverNumber !== driverNumber) {
