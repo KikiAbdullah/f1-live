@@ -120,15 +120,6 @@ export const positionService = {
       if (activePit) {
         inPit = true;
         currentPitDuration = (absoluteTimeMillis - activePit.timestamp) / 1000;
-        
-        // Console log saat timeline menyentuh/berada di dalam posisi PIT
-        if (!activePit._logged) {
-            console.log(`%c[PIT-START] Driver #${driverNum} MASUK PIT!`, 'background: #e10600; color: #fff; padding: 2px 5px; border-radius: 3px;');
-            activePit._logged = true;
-        }
-        console.log(`%c[PIT-ACTIVE] Driver #${driverNum} | Lap: ${activePit.lap_number} | Progress: ${currentPitDuration.toFixed(2)}s / ${activePit.pit_duration}s`, 'color: #f1c40f;');
-      } else {
-        // Reset flag log jika sudah keluar pit (opsional, tergantung struktur data)
       }
 
       positions.push({

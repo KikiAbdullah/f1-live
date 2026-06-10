@@ -6,7 +6,6 @@ export const timeline = {
   lastTick: 0,
 
   start() {
-    console.log("Timeline: start requested");
     if (store.playback.isPlaying) return;
 
     // Validasi tidak hanya untuk startTime, tapi juga endTime
@@ -27,7 +26,6 @@ export const timeline = {
     this.lastTick = performance.now();
     this.tick();
     eventBus.emit("playback:start");
-    console.log("Timeline: started at", store.playback.currentTime);
   },
 
   pause() {

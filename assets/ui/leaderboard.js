@@ -23,7 +23,6 @@ export class Leaderboard {
     eventBus.on("playback:update", this.handlePlaybackUpdate);
     eventBus.on("session:ready", this.handleSessionReady);
     eventBus.on("driver:selected", (num) => {
-        console.log("[Leaderboard] Event 'driver:selected' received for:", num);
         this.handleDriverSelected(num);
     });
   }
@@ -72,14 +71,11 @@ export class Leaderboard {
       const driverNumber = String(item.dataset.driverNumber || "");
       if (!driverNumber) return;
 
-      console.log("[Leaderboard] Clicked driver:", driverNumber);
-
       const currentSelected = store.ui?.selectedDriver || store.selectedDriver;
       let newSelected = driverNumber;
 
       // Jika yang diklik adalah yang sedang terpilih, maka unselect
       if (String(currentSelected) === String(driverNumber)) {
-        console.log("[Leaderboard] Unselecting driver:", driverNumber);
         newSelected = null;
       }
 

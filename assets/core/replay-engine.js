@@ -83,8 +83,6 @@ export const replayEngine = {
       const laps = await F1Api.fetchLaps(sessionKey);
       store.raceData.laps = laps;
 
-      console.log("Initial laps loaded:", laps.length);
-
       // 2. OPTIMASI GLOBAL: Tarik data global (termasuk Stints & Pit) sekaligus secara paralel
       // Karena stints dan pit mengembalikan data seluruh driver, panggil di luar loop driver!
       const globalItems = [
@@ -273,23 +271,13 @@ export const replayEngine = {
       }
 
       if (isNaN(store.playback.startTime) || isNaN(store.playback.endTime)) {
-        console.error(
-          "Failed to determine session time range even with raw data"
-        );
+        throw new Error("Unable to determine valid session time range from available data.");
       } else {
         store.playback.currentTime = 0;
-        console.log(
-          "Session range confirmed:",
-          new Date(store.playback.startTime).toISOString(),
-          "to",
-          new Date(store.playback.endTime).toISOString()
-        );
       }
 
       // Tampilkan ringkasan data PIT dari database saat pertama kali load
       if (store.raceData.pit && store.raceData.pit.length > 0) {
-        console.log("%c[DATABASE] Semua Data Pit Stop Ditemukan:", "color: #f1c40f; font-weight: bold; font-size: 14px;");
-        
         const formatTimeline = (totalSeconds) => {
           const h = Math.floor(totalSeconds / 3600);
           const m = Math.floor((totalSeconds % 3600) / 60);
@@ -307,7 +295,6 @@ export const replayEngine = {
             "Clock Time": p.date
           };
         });
-        console.table(pitSummary);
       }
 
       eventBus.emit("loading:success");

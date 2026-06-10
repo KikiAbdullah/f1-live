@@ -83,7 +83,6 @@ export class Controls {
     sliderContainer.querySelectorAll('.timeline-marker').forEach(m => m.remove());
 
     const events = store.raceData?.raceControl || [];
-    console.log("[Markers] All events in store:", events.length > 0 ? events[0] : "None");
 
     // Gunakan map untuk menghindari duplikasi
     const processedEvents = new Map();
