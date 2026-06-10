@@ -51,7 +51,7 @@ export class RaceFeed {
 
     // Filter pesan yang sudah terjadi hingga detik pemutaran ini
     const currentMessages = rawRaceControl.filter(
-      (m) => m.date <= absoluteTime
+      (m) => (m.date || m.timestamp) <= absoluteTime
     );
 
     // Urutkan berdasarkan waktu terbaru (latest first)

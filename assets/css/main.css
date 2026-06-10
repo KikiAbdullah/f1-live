@@ -805,7 +805,34 @@ body {
   display: flex;
   align-items: center;
   gap: 20px;
+  position: relative;
+  padding-top: 15px; /* Tambahkan ruang untuk marker */
 }
+
+.timeline-marker {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 100;
+  transform: translate(-50%, -100%);
+  border: 1.5px solid rgba(0, 0, 0, 0.4);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.timeline-marker:hover {
+  transform: translate(-50%, -110%) scale(1.6);
+  z-index: 101;
+  box-shadow: 0 0 15px currentColor;
+}
+
+.marker-red-flag { background: #ff1801; color: #ff1801; }
+.marker-sc { background: #ffdf00; color: #ff0000; border-color: #000; }
+.marker-vsc { background: #ffdf00; color: #ffdf00; }
+.marker-start { background: #00ff00; color: #00ff00; }
+.marker-finish { background: #ffffff; color: #ffffff; }
 
 #play-pause {
   width: 45px;

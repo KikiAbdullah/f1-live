@@ -72,6 +72,71 @@ export class Controls {
       speedSelect.disabled = false;
       playBtn.textContent = "▶";
       this.updateTimeDisplay(0);
+      this.renderMarkers(duration);
+    });
+  }
+
+  renderMarkers(duration) {
+    const sliderContainer = this.elements.slider.parentElement;
+    
+    // Hapus marker lama
+    sliderContainer.querySelectorAll('.timeline-marker').forEach(m => m.remove());
+
+    const events = store.raceData?.raceControl || [];
+    console.log("[Markers] All events in store:", events.length > 0 ? events[0] : "None");
+
+    // Gunakan map untuk menghindari duplikasi
+    const processedEvents = new Map();
+
+    events.forEach(event => {
+      const category = (event.category || "").toLowerCase();
+      const message = (event.message || "").toLowerCase();
+      
+      let type = null;
+      let label = "";
+
+      // Logic matching yang lebih robust sesuai data OpenF1
+      if (category.includes("flag") && message.includes("red")) {
+        type = "red-flag";
+        label = "RED FLAG";
+      } else if (message.includes("safety car deployed") || category.includes("safetycar")) {
+        if (message.includes("virtual")) {
+          type = "vsc";
+          label = "VSC";
+        } else {
+          type = "sc";
+          label = "SAFETY CAR";
+        }
+      } else if (message.includes("race start") || message.includes("session start")) {
+        type = "start";
+        label = "RACE START";
+      } else if (message.includes("chequered flag") || message.includes("session end")) {
+        type = "finish";
+        label = "FINISH";
+      }
+
+      if (!type) return;
+      
+      const eventDate = event.date || event.date_start;
+      if (!eventDate) return;
+
+      const eventTime = new Date(eventDate).getTime() - store.playback.startTime;
+      if (eventTime < 0 || eventTime > duration) return;
+
+      const markerId = `${type}-${Math.round(eventTime / 5000)}`; // Group by 5 seconds
+      if (processedEvents.has(markerId)) return;
+      processedEvents.set(markerId, true);
+
+      const marker = document.createElement('div');
+      marker.className = `timeline-marker marker-${type}`;
+      marker.style.left = `${(eventTime / duration) * 100}%`;
+      marker.title = `${label}: ${event.message || ''}`;
+      
+      marker.onclick = (e) => {
+        e.stopPropagation();
+        timeline.seek(eventTime);
+      };
+      sliderContainer.appendChild(marker);
     });
   }
 

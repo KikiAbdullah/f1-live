@@ -204,6 +204,14 @@
         </div>
       </div>
     </footer>
+    
+    <script>
+      // Force refresh of the page to ensure all new CSS and script changes are loaded
+      if (!sessionStorage.getItem('reloaded')) {
+        sessionStorage.setItem('reloaded', 'true');
+        location.reload();
+      }
+    </script>
 
     <script type="module" src="assets/js/app.js"></script>
   </body>

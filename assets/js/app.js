@@ -79,20 +79,27 @@ function updateHeaderInfo() {
 function updateCurrentLap(timestamp) {
   const selectedDriver = store.ui?.selectedDriver;
   const laps = store.raceData?.laps || [];
+  
   if (!selectedDriver || laps.length === 0 || typeof store.playback.startTime !== "number") {
+    ui.currentLap.textContent = "--";
     return;
   }
 
   const absoluteTime = store.playback.startTime + timestamp;
   let currentLap = 1;
-  for (let index = laps.length - 1; index >= 0; index--) {
-    const lap = laps[index];
-    if (String(lap.driver_number) !== String(selectedDriver) || !lap.date_start) continue;
-    if (new Date(lap.date_start).getTime() <= absoluteTime) {
-      currentLap = lap.lap_number || currentLap;
-      break;
+  
+  // Mencari lap terbaru yang sudah dimulai berdasarkan waktu absolut
+  // Menggunakan lap.timestamp yang sudah dikonversi di replay-engine
+  for (let i = laps.length - 1; i >= 0; i--) {
+    const lap = laps[i];
+    if (String(lap.driver_number) === String(selectedDriver)) {
+      if (lap.timestamp <= absoluteTime) {
+        currentLap = lap.lap_number || currentLap;
+        break;
+      }
     }
   }
+  
   ui.currentLap.textContent = currentLap;
 }
 
@@ -171,10 +178,12 @@ function updateTelemetry(timestamp) {
   }
 
   // Lap time display if available in store
-  const currentLapData = store.raceData?.laps?.find(l => 
+  const lapNum = Number.parseInt(ui.currentLap.textContent, 10);
+  const currentLapData = !Number.isNaN(lapNum) ? store.raceData?.laps?.find(l => 
     String(l.driver_number) === String(store.ui.selectedDriver) && 
-    l.lap_number === Number(ui.currentLap.textContent)
-  );
+    l.lap_number === lapNum
+  ) : null;
+
   if (currentLapData && ui.lapTime) {
     ui.lapTime.textContent = currentLapData.lap_duration ? 
       currentLapData.lap_duration.toFixed(3) : "--:--.---";
