@@ -52,7 +52,22 @@ export class TelemetryChart {
   }
 
   handleDriverSelection(driverNumber) {
+    if (!driverNumber) {
+        this.currentDriver = null;
+        if (this.chart) {
+            this.chart.destroy();
+            this.chart = null;
+        }
+        // Pastikan info panel utama disembunyikan
+        const infoPanel = document.getElementById("driver-info-panel");
+        if (infoPanel) infoPanel.classList.remove("visible");
+        return;
+    }
     this.currentDriver = driverNumber;
+    
+    const infoPanel = document.getElementById("driver-info-panel");
+    if (infoPanel) infoPanel.classList.add("visible");
+
     this.renderChart();
 
     if (store.playback && typeof store.playback.currentTime === "number") {

@@ -40,8 +40,17 @@ export class Leaderboard {
   }
 
   handleDriverSelected(driverNumber) {
-    if (!driverNumber) return;
     this.highlightDriver(driverNumber);
+    if (!driverNumber) {
+        // Hapus panel jika unselect
+        this.listElement.querySelectorAll(".inline-telemetry").forEach(el => el.remove());
+        this.recalculateRowPositions();
+        
+        // Unselect juga di track map melalui store
+        if (store.ui) store.ui.selectedDriver = null;
+        store.setState("selectedDriver", null);
+        return;
+    }
     this.renderInlineTelemetry(driverNumber);
   }
 
@@ -65,10 +74,19 @@ export class Leaderboard {
 
       console.log("[Leaderboard] Clicked driver:", driverNumber);
 
-      if (store.ui) store.ui.selectedDriver = driverNumber;
-      store.selectedDriver = driverNumber;
+      const currentSelected = store.ui?.selectedDriver || store.selectedDriver;
+      let newSelected = driverNumber;
 
-      eventBus.emit("driver:selected", driverNumber);
+      // Jika yang diklik adalah yang sedang terpilih, maka unselect
+      if (String(currentSelected) === String(driverNumber)) {
+        console.log("[Leaderboard] Unselecting driver:", driverNumber);
+        newSelected = null;
+      }
+
+      if (store.ui) store.ui.selectedDriver = newSelected;
+      store.selectedDriver = newSelected;
+
+      eventBus.emit("driver:selected", newSelected);
     });
   }
 

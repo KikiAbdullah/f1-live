@@ -165,7 +165,12 @@ export class TrackMap {
     }
 
     if (clickedDriver) {
-      eventBus.emit("driver:selected", clickedDriver);
+      const currentSelected = store.ui?.selectedDriver || store.selectedDriver;
+      const newSelected = String(currentSelected) === String(clickedDriver) ? null : clickedDriver;
+      eventBus.emit("driver:selected", newSelected);
+    } else {
+      // Jika klik di area kosong, unselect juga
+      eventBus.emit("driver:selected", null);
     }
   }
 
