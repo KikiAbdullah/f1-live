@@ -509,7 +509,7 @@ export class TrackMap {
       this.ctx.shadowColor = teamColor;
       this.ctx.shadowBlur = 24;
       this.ctx.beginPath();
-      this.ctx.fillStyle = "#7fdfff";
+      this.ctx.fillStyle = teamColor;
       this.ctx.strokeStyle = "#ffffff";
       this.ctx.lineWidth = 3;
       this.ctx.arc(x, y, 14, 0, Math.PI * 2);
@@ -520,39 +520,64 @@ export class TrackMap {
       this.ctx.font = "bold 11px sans-serif";
       this.ctx.textAlign = "left";
       this.ctx.textBaseline = "middle";
-      this.drawLabelChip(x + 18, y - 2, acronym, teamColor);
+      this.drawLabelChip(x + 18, y - 2, acronym, teamColor, true);
     } else {
+      this.ctx.globalAlpha = 0.55;
       this.ctx.beginPath();
       this.ctx.fillStyle = teamColor;
       this.ctx.strokeStyle = "#26262d";
-      this.ctx.lineWidth = 2;
-      this.ctx.arc(x, y, 7, 0, Math.PI * 2);
+      this.ctx.lineWidth = 1.5;
+      this.ctx.arc(x, y, 6, 0, Math.PI * 2);
       this.ctx.fill();
       this.ctx.stroke();
+      
+      this.drawLabelChip(x + 10, y - 1, acronym, teamColor, false);
     }
     this.ctx.restore();
   }
 
-  drawLabelChip(x, y, text, accentColor) {
+  drawLabelChip(x, y, text, accentColor, isSelected = true) {
     if (!this.ctx) return;
-    const paddingX = 12;
-    this.ctx.font = "bold 12px Titillium Web, sans-serif";
-    const textWidth = this.ctx.measureText(text).width;
-    const width = textWidth + paddingX * 2;
-    const height = 26;
+    
+    if (isSelected) {
+      const paddingX = 12;
+      this.ctx.font = "bold 12px Titillium Web, sans-serif";
+      const textWidth = this.ctx.measureText(text).width;
+      const width = textWidth + paddingX * 2;
+      const height = 26;
 
-    this.ctx.beginPath();
-    this.ctx.fillStyle = "rgba(12, 12, 16, 0.92)";
-    this.ctx.strokeStyle = accentColor;
-    this.ctx.lineWidth = 2;
-    this.roundRect(x, y - height / 2, width, height, 999);
-    this.ctx.fill();
-    this.ctx.stroke();
+      this.ctx.beginPath();
+      this.ctx.fillStyle = "rgba(12, 12, 16, 0.92)";
+      this.ctx.strokeStyle = accentColor;
+      this.ctx.lineWidth = 2;
+      this.roundRect(x, y - height / 2, width, height, 999);
+      this.ctx.fill();
+      this.ctx.stroke();
 
-    this.ctx.fillStyle = "#ffffff";
-    this.ctx.textAlign = "left";
-    this.ctx.textBaseline = "middle";
-    this.ctx.fillText(text, x + paddingX, y + 1);
+      this.ctx.fillStyle = "#ffffff";
+      this.ctx.textAlign = "left";
+      this.ctx.textBaseline = "middle";
+      this.ctx.fillText(text, x + paddingX, y + 1);
+    } else {
+      this.ctx.font = "bold 8px Titillium Web, sans-serif";
+      const textWidth = this.ctx.measureText(text).width;
+      const paddingX = 4;
+      const width = textWidth + paddingX * 2;
+      const height = 14;
+
+      this.ctx.beginPath();
+      this.ctx.fillStyle = "rgba(12, 12, 16, 0.4)";
+      this.ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+      this.ctx.lineWidth = 1;
+      this.roundRect(x, y - height / 2, width, height, 3);
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+      this.ctx.textAlign = "left";
+      this.ctx.textBaseline = "middle";
+      this.ctx.fillText(text, x + paddingX, y);
+    }
   }
 
   roundRect(x, y, width, height, radius) {
