@@ -34,9 +34,6 @@
       </nav>
 
       <div class="header-right">
-        <div class="lap-counter-box">
-          LAP <span id="current-lap">1</span> / <span id="total-laps">--</span>
-        </div>
         <button id="toggle-session-loader" aria-label="Pilih sesi">📅</button>
       </div>
     </header>
@@ -162,6 +159,14 @@
 
       <main class="track-viewport">
         <canvas id="track-map"></canvas>
+        
+        <!-- Top Center Lap Counter -->
+        <div class="lap-counter-box floating-lap">
+          <span class="lap-label">LAP</span>
+          <span class="lap-nums">
+            <span id="current-lap">1</span> / <span id="total-laps">--</span>
+          </span>
+        </div>
         
         <!-- Floating Weather Widget -->
         <div class="weather-floating" id="weather-display">
