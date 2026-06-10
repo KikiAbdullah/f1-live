@@ -233,9 +233,23 @@ export class Leaderboard {
   showLeaderAlert(driver) {
     const alertEl = document.getElementById("leader-alert");
     const nameEl = document.getElementById("la-driver-name");
+    const accentEl = alertEl?.querySelector(".la-accent");
+    
     if (!alertEl || !nameEl) return;
     if (this.alertTimeout) clearTimeout(this.alertTimeout);
+    
     nameEl.textContent = driver.broadcast_name || driver.name_acronym || "DRIVER";
+    
+    // Set color to team color
+    if (driver.team_colour) {
+        const teamColor = `#${driver.team_colour}`;
+        nameEl.style.color = teamColor;
+        if (accentEl) accentEl.style.backgroundColor = teamColor;
+    } else {
+        nameEl.style.color = "var(--accent-blue)"; // Default fallback
+        if (accentEl) accentEl.style.backgroundColor = "var(--f1-red)";
+    }
+    
     alertEl.classList.remove("hidden");
     this.alertTimeout = setTimeout(() => {
       alertEl.classList.add("hidden");
