@@ -25,12 +25,20 @@ export class TrackMap {
     this.resizeObserver = null;
     this.driverCache = new Map();
     this.driverMarkers = new Map(); // Store screen coordinates for hit testing
+    this.hoveredDriver = null;
+    this.isDragging = false;
+    this.lastMousePos = { x: 0, y: 0 };
+    this.panOffset = { x: 0, y: 0 };
 
     // Bind methods
     this.handlePlaybackUpdate = this.handlePlaybackUpdate.bind(this);
     this.handleSessionReady = this.handleSessionReady.bind(this);
     this.handleDriverSelection = this.handleDriverSelection.bind(this);
     this.handleClick = this.handleClick.bind(this);
+    this.handleMouseMove = this.handleMouseMove.bind(this);
+    this.handleMouseDown = this.handleMouseDown.bind(this);
+    this.handleMouseUp = this.handleMouseUp.bind(this);
+    this.handleWheel = this.handleWheel.bind(this);
 
     this.init();
   }
@@ -41,6 +49,11 @@ export class TrackMap {
     eventBus.on("driver:selected", this.handleDriverSelection);
 
     this.canvas.addEventListener("click", this.handleClick);
+    this.canvas.addEventListener("mousedown", this.handleMouseDown);
+    this.canvas.addEventListener("mousemove", this.handleMouseMove);
+    this.canvas.addEventListener("mouseup", this.handleMouseUp);
+    this.canvas.addEventListener("mouseleave", this.handleMouseUp);
+    this.canvas.addEventListener("wheel", this.handleWheel, { passive: false });
 
     // FIX: Pasang ResizeObserver agar peta otomatis presisi saat ukuran layar berubah
     if (this.canvas.parentElement) {
@@ -136,13 +149,67 @@ export class TrackMap {
   // Fungsi helper transformasi koordinat sirkuit F1 ke pixel koordinat Canvas
   transformX(x) {
     const baseX = this.offsetX + (x - this.bounds.minX) * this.scaleX;
-    return this.canvas.width / 2 + (baseX - this.canvas.width / 2) * this.zoom;
+    return this.canvas.width / 2 + (baseX - this.canvas.width / 2) * this.zoom + this.panOffset.x;
   }
 
   transformY(y) {
     // Balik sumbu Y karena koordinat Cartesian F1 berbanding terbalik dengan ordinat pixel HTML5 Canvas
     const baseY = this.offsetY + (this.bounds.maxY - y) * this.scaleY;
-    return this.canvas.height / 2 + (baseY - this.canvas.height / 2) * this.zoom;
+    return this.canvas.height / 2 + (baseY - this.canvas.height / 2) * this.zoom + this.panOffset.y;
+  }
+
+  handleMouseDown(e) {
+    this.isDragging = true;
+    this.lastMousePos = { x: e.clientX, y: e.clientY };
+    this.canvas.style.cursor = "grabbing";
+  }
+
+  handleMouseUp() {
+    this.isDragging = false;
+    this.canvas.style.cursor = "crosshair";
+  }
+
+  handleMouseMove(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    if (this.isDragging) {
+      const dx = e.clientX - this.lastMousePos.x;
+      const dy = e.clientY - this.lastMousePos.y;
+      this.panOffset.x += dx;
+      this.panOffset.y += dy;
+      this.lastMousePos = { x: e.clientX, y: e.clientY };
+      this.update(store.playback?.currentTime || 0);
+      return;
+    }
+
+    // Hover Detection
+    let foundHover = null;
+    for (const [driverNumber, pos] of this.driverMarkers.entries()) {
+      const dist = Math.sqrt((mouseX - pos.x) ** 2 + (mouseY - pos.y) ** 2);
+      if (dist < 15) {
+        foundHover = driverNumber;
+        break;
+      }
+    }
+
+    if (this.hoveredDriver !== foundHover) {
+      this.hoveredDriver = foundHover;
+      this.canvas.style.cursor = foundHover ? "pointer" : "crosshair";
+      this.update(store.playback?.currentTime || 0);
+    }
+  }
+
+  handleWheel(e) {
+    e.preventDefault();
+    const zoomSpeed = 0.001;
+    const delta = -e.deltaY;
+    const oldZoom = this.zoom;
+    this.zoom = Math.max(0.4, Math.min(this.zoom + delta * zoomSpeed, 5));
+    
+    // Zoom focus ke arah mouse (opsional, sederhana saja dulu)
+    this.update(store.playback?.currentTime || 0);
   }
 
   handleClick(event) {
@@ -177,16 +244,20 @@ export class TrackMap {
   preRenderTrack() {
     if (this.bounds.minX === Infinity) return;
 
-    // Untuk menghindari clipping saat zoom, kita buat trackCanvas lebih besar dari canvas utama
-    // atau kita render dinamis. Namun pre-render lebih efisien. 
-    // Strategi baru: trackCanvas akan berukuran 3x canvas utama untuk ruang zoom.
+    // Simpan state zoom & pan saat ini
+    const currentZoom = this.zoom;
+    const currentPan = { ...this.panOffset };
+
+    // Paksa render pada skala dasar (Zoom 1, Pan 0) agar buffer bersih
+    this.zoom = 1;
+    this.panOffset = { x: 0, y: 0 };
+
     const bufferScale = 3;
     this.trackCanvas = document.createElement("canvas");
     this.trackCanvas.width = this.canvas.width * bufferScale;
     this.trackCanvas.height = this.canvas.height * bufferScale;
     const tCtx = this.trackCanvas.getContext("2d");
     
-    // Simpan context untuk mempermudah koordinat di tengah
     tCtx.translate(
         (this.trackCanvas.width - this.canvas.width) / 2,
         (this.trackCanvas.height - this.canvas.height) / 2
@@ -204,44 +275,43 @@ export class TrackMap {
       }
     }
 
-    if (!trackPoints || trackPoints.length === 0) return;
+    if (trackPoints && trackPoints.length > 0) {
+      this.drawTrackSegments(tCtx, trackPoints);
+      this.renderCircuitMetadata(tCtx);
 
-    this.drawTrackSegments(tCtx, trackPoints);
+      // Menggambar Garis Start / Finish (Checkered Pattern)
+      const startPoint = trackPoints[0];
+      const sx = this.transformX(startPoint.x);
+      const sy = this.transformY(startPoint.y);
 
-    // Render Circuit Metadata: Corners, Sectors, and DRS Zones
-    this.renderCircuitMetadata(tCtx);
+      const nextPt = trackPoints[1] || trackPoints[0];
+      const dx = this.transformX(nextPt.x) - sx;
+      const dy = this.transformY(nextPt.y) - sy;
+      const angle = Math.atan2(dy, dx) + Math.PI / 2;
 
-    // Menggambar Garis Start / Finish (Checkered Pattern)
-    const startPoint = trackPoints[0];
-    const sx = this.transformX(startPoint.x);
-    const sy = this.transformY(startPoint.y);
+      tCtx.save();
+      tCtx.translate(sx, sy);
+      tCtx.rotate(angle);
 
-    // Find direction for finish line orientation
-    const nextPt = trackPoints[1];
-    const dx = this.transformX(nextPt.x) - sx;
-    const dy = this.transformY(nextPt.y) - sy;
-    const angle = Math.atan2(dy, dx) + Math.PI / 2;
-
-    tCtx.save();
-    tCtx.translate(sx, sy);
-    tCtx.rotate(angle);
-
-    // Draw Checkered Line
-    const boxSize = 4;
-    for (let row = -1; row <= 1; row++) {
-      for (let col = -2; col <= 2; col++) {
-        tCtx.fillStyle = (row + col) % 2 === 0 ? "#ffffff" : "#000000";
-        tCtx.fillRect(col * boxSize, row * boxSize, boxSize, boxSize);
+      const boxSize = 4;
+      for (let row = -1; row <= 1; row++) {
+        for (let col = -2; col <= 2; col++) {
+          tCtx.fillStyle = (row + col) % 2 === 0 ? "#ffffff" : "#000000";
+          tCtx.fillRect(col * boxSize, row * boxSize, boxSize, boxSize);
+        }
       }
+      
+      tCtx.rotate(-angle);
+      tCtx.fillStyle = "#ffffff";
+      tCtx.font = "bold 10px sans-serif";
+      tCtx.textAlign = "center";
+      tCtx.fillText("START / FINISH", 0, -15);
+      tCtx.restore();
     }
-    
-    // Label FINISH
-    tCtx.rotate(-angle);
-    tCtx.fillStyle = "#ffffff";
-    tCtx.font = "bold 10px sans-serif";
-    tCtx.textAlign = "center";
-    tCtx.fillText("START / FINISH", 0, -15);
-    tCtx.restore();
+
+    // Kembalikan state zoom & pan ke aslinya
+    this.zoom = currentZoom;
+    this.panOffset = currentPan;
   }
 
   drawTrackSegments(tCtx, trackPoints) {
@@ -448,6 +518,7 @@ export class TrackMap {
 
   resetView() {
     this.zoom = 1;
+    this.panOffset = { x: 0, y: 0 };
     this.updateScaleFactors();
     this.preRenderTrack();
     this.update(store.playback?.currentTime || 0);
@@ -475,11 +546,22 @@ export class TrackMap {
     // Bersihkan area frame canvas utama
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Cetak background sirkuit statis
+    // Render Background Lintasan dengan Sinkronisasi Zoom & Pan
     if (this.trackCanvas) {
-      const drawX = -(this.trackCanvas.width - this.canvas.width) / 2;
-      const drawY = -(this.trackCanvas.height - this.canvas.height) / 2;
+      this.ctx.save();
+      
+      // Pindah ke titik pusat canvas
+      this.ctx.translate(this.canvas.width / 2 + this.panOffset.x, this.canvas.height / 2 + this.panOffset.y);
+      
+      // Lakukan scaling (zoom) dari titik pusat
+      this.ctx.scale(this.zoom, this.zoom);
+      
+      // Gambar buffer trackCanvas tepat di tengah
+      const drawX = -this.trackCanvas.width / 2;
+      const drawY = -this.trackCanvas.height / 2;
       this.ctx.drawImage(this.trackCanvas, drawX, drawY);
+      
+      this.ctx.restore();
     }
 
     const activeSelectedDriver = String(
@@ -500,9 +582,10 @@ export class TrackMap {
       const x = this.transformX(loc.x);
       const y = this.transformY(loc.y);
       const isSelected = String(driverNumber) === activeSelectedDriver;
+      const isHovered = String(driverNumber) === this.hoveredDriver;
 
       this.driverMarkers.set(String(driverNumber), { x, y });
-      this.drawDriverMarker(x, y, teamColor, acronym, isSelected);
+      this.drawDriverMarker(x, y, teamColor, acronym, isSelected || isHovered);
     }
   }
 

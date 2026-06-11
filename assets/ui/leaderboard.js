@@ -169,13 +169,19 @@ export class Leaderboard {
     if (!this.listElement) return;
     const children = Array.from(this.listElement.children);
     let currentY = 0;
+    
+    // Gunakan tinggi row yang responsif
+    const isMobile = window.innerWidth <= 760;
+    const rowHeight = isMobile ? 40 : 32;
+    const telemetryHeight = isMobile ? 180 : 240;
+
     children.forEach((child) => {
         if (child.classList.contains("leaderboard-row")) {
             child.style.transform = `translateY(${currentY}px)`;
-            currentY += 32;
+            currentY += rowHeight;
         } else if (child.classList.contains("inline-telemetry")) {
             child.style.transform = `translateY(${currentY}px)`;
-            currentY += 240;
+            currentY += telemetryHeight;
         }
     });
     this.listElement.style.height = `${currentY}px`;
@@ -250,6 +256,10 @@ export class Leaderboard {
 
   update(timestamp = 0) {
     if (!this.listElement) return;
+    
+    // Update responsive logic if window resized
+    this.recalculateRowPositions();
+
     let positions = [];
     try {
       if (positionService.getLatestPositions) {
@@ -321,7 +331,7 @@ export class Leaderboard {
           const pos = p.position || index + 1;
           const interval = index === 0 ? "Interval" : (p.interval || "+0.000s");
           const compound = p.tyre_compound ? p.tyre_compound.charAt(0).toUpperCase() : "S";
-          const pitText = p.inPit ? (p.pitStopDuration ? `PIT ${parseFloat(p.pitStopDuration).toFixed(1)}s` : "PIT") : "";
+          const pitText = p.inPit ? (p.pitStopDuration ? `P ${parseFloat(p.pitStopDuration).toFixed(0)}s` : "PIT") : "";
 
           return `
                     <div class="leaderboard-row ${String(driverNumber) === selectedDriver ? "selected" : ""} ${p.inPit ? "in-pit" : ""} ${p.status === "Retired" ? "out" : ""}"
@@ -355,6 +365,10 @@ export class Leaderboard {
     }
 
     let currentY = 0;
+    const isMobile = window.innerWidth <= 760;
+    const rowHeight = isMobile ? 40 : 32;
+    const telHeight = isMobile ? 180 : 240;
+
     positions.forEach((p, index) => {
       const cache = this.cachedItems[index];
       if (!cache) return;
@@ -368,13 +382,13 @@ export class Leaderboard {
       const pitText = p.inPit ? (p.pitStopDuration ? `PIT ${parseFloat(p.pitStopDuration).toFixed(1)}s` : "PIT") : "";
 
       cache.el.style.transform = `translateY(${currentY}px)`;
-      currentY += 32;
+      currentY += rowHeight;
 
       if (isSelected) {
           const telCont = this.listElement.querySelector(".inline-telemetry");
           if (telCont) {
               telCont.style.transform = `translateY(${currentY}px)`;
-              currentY += 240;
+              currentY += telHeight;
           }
       }
       
