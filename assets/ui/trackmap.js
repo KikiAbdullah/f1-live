@@ -27,8 +27,11 @@ export class TrackMap {
     this.driverMarkers = new Map(); // Store screen coordinates for hit testing
     this.hoveredDriver = null;
     this.isDragging = false;
+    this.isFollowing = false; // Flag untuk mengikuti pembalap
     this.lastMousePos = { x: 0, y: 0 };
     this.panOffset = { x: 0, y: 0 };
+    this.targetPanOffset = { x: 0, y: 0 }; // Untuk Lerping
+    this.cornerMarkers = new Map(); // Untuk Clickable Corners
 
     // Bind methods
     this.handlePlaybackUpdate = this.handlePlaybackUpdate.bind(this);
@@ -77,6 +80,14 @@ export class TrackMap {
     // FIX BUG LOGIKA STATE: Sinkronisasi kedua target penulisan state demi keamanan UI
     if (store.ui) store.ui.selectedDriver = driverNumber;
     store.setState("selectedDriver", driverNumber);
+
+    if (driverNumber) {
+        this.isFollowing = true;
+        // Jika sedang un-zoom, auto zoom in sedikit saat mengikuti
+        if (this.zoom < 1.2) this.zoom = 1.8;
+    } else {
+        this.isFollowing = false;
+    }
 
     const currentTime = store.playback?.currentTime || 0;
     this.update(currentTime); // Re-render instan untuk memberikan highlight cyan
@@ -160,6 +171,7 @@ export class TrackMap {
 
   handleMouseDown(e) {
     this.isDragging = true;
+    this.isFollowing = false; // Matikan auto-follow jika user menggeser manual
     this.lastMousePos = { x: e.clientX, y: e.clientY };
     this.canvas.style.cursor = "grabbing";
   }
@@ -217,8 +229,9 @@ export class TrackMap {
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
 
+    // 1. Check Driver Click
     let clickedDriver = null;
-    let minDistance = 20; // Radius toleransi klik dalam pixel
+    let minDistance = 20;
 
     for (const [driverNumber, pos] of this.driverMarkers.entries()) {
       const dx = mouseX - pos.x;
@@ -235,10 +248,31 @@ export class TrackMap {
       const currentSelected = store.ui?.selectedDriver || store.selectedDriver;
       const newSelected = String(currentSelected) === String(clickedDriver) ? null : clickedDriver;
       eventBus.emit("driver:selected", newSelected);
-    } else {
-      // Jika klik di area kosong, unselect juga
-      eventBus.emit("driver:selected", null);
+      return;
     }
+
+    // 2. Check Corner Click
+    for (const [cornerNum, pos] of this.cornerMarkers.entries()) {
+        const dist = Math.sqrt((mouseX - pos.x) ** 2 + (mouseY - pos.y) ** 2);
+        if (dist < 15) {
+            this.focusOnCorner(pos.rawX, pos.y_raw); // Kita butuh raw coordinates
+            return;
+        }
+    }
+
+    // 3. Click Empty Area
+    eventBus.emit("driver:selected", null);
+  }
+
+  focusOnCorner(x, y) {
+      this.isFollowing = false;
+      this.zoom = 2.0;
+      const baseX = this.offsetX + (x - this.bounds.minX) * this.scaleX;
+      const baseY = this.offsetY + (this.bounds.maxY - y) * this.scaleY;
+
+      this.panOffset.x = -(baseX - this.canvas.width / 2) * this.zoom;
+      this.panOffset.y = -(baseY - this.canvas.height / 2) * this.zoom;
+      this.update(store.playback?.currentTime || 0);
   }
 
   preRenderTrack() {
@@ -518,6 +552,7 @@ export class TrackMap {
 
   resetView() {
     this.zoom = 1;
+    this.isFollowing = false;
     this.panOffset = { x: 0, y: 0 };
     this.updateScaleFactors();
     this.preRenderTrack();
@@ -535,12 +570,38 @@ export class TrackMap {
   update(timestamp) {
     if (!telemetryService) return;
     const currentLocations = telemetryService.getAllLocations(timestamp);
-    if (currentLocations) {
-      this.draw(currentLocations);
+    if (!currentLocations) return;
+
+    // Logika Auto-Follow dengan Lerping
+    const activeSelectedDriver = String(store.ui?.selectedDriver ?? store.selectedDriver ?? "");
+    
+    if (this.isFollowing && activeSelectedDriver && currentLocations[activeSelectedDriver]) {
+        const loc = currentLocations[activeSelectedDriver];
+        
+        const baseX = this.offsetX + (loc.x - this.bounds.minX) * this.scaleX;
+        const baseY = this.offsetY + (this.bounds.maxY - loc.y) * this.scaleY;
+
+        this.targetPanOffset.x = -(baseX - this.canvas.width / 2) * this.zoom;
+        this.targetPanOffset.y = -(baseY - this.canvas.height / 2) * this.zoom;
+
+        // Cinematic Lerping (Smooth Follow)
+        const lerpFactor = 0.08;
+        this.panOffset.x += (this.targetPanOffset.x - this.panOffset.x) * lerpFactor;
+        this.panOffset.y += (this.targetPanOffset.y - this.panOffset.y) * lerpFactor;
+
+        // Dynamic Auto-Zoom based on speed
+        const tel = telemetryService.getDriverTelemetry(activeSelectedDriver, timestamp);
+        if (tel && tel.speed) {
+            const speed = tel.speed;
+            const targetZoom = speed > 250 ? 1.4 : speed < 80 ? 2.2 : 1.8;
+            this.zoom += (targetZoom - this.zoom) * 0.02; // Very slow zoom transition
+        }
     }
+
+    this.draw(currentLocations, timestamp);
   }
 
-  draw(currentLocations) {
+  draw(currentLocations, timestamp) {
     if (!this.ctx || this.bounds.minX === Infinity) return;
 
     // Bersihkan area frame canvas utama
@@ -549,19 +610,26 @@ export class TrackMap {
     // Render Background Lintasan dengan Sinkronisasi Zoom & Pan
     if (this.trackCanvas) {
       this.ctx.save();
-      
-      // Pindah ke titik pusat canvas
       this.ctx.translate(this.canvas.width / 2 + this.panOffset.x, this.canvas.height / 2 + this.panOffset.y);
-      
-      // Lakukan scaling (zoom) dari titik pusat
       this.ctx.scale(this.zoom, this.zoom);
-      
-      // Gambar buffer trackCanvas tepat di tengah
       const drawX = -this.trackCanvas.width / 2;
       const drawY = -this.trackCanvas.height / 2;
       this.ctx.drawImage(this.trackCanvas, drawX, drawY);
-      
       this.ctx.restore();
+    }
+
+    // Update Corner Click Markers (hanya saat draw untuk sync dengan zoom/pan)
+    this.cornerMarkers.clear();
+    const info = store.raceData?.circuitInfo;
+    if (info && info.corners) {
+        info.corners.forEach(c => {
+            this.cornerMarkers.set(c.number, {
+                x: this.transformX(c.trackPosition.x),
+                y: this.transformY(c.trackPosition.y),
+                rawX: c.trackPosition.x,
+                y_raw: c.trackPosition.y
+            });
+        });
     }
 
     const activeSelectedDriver = String(
@@ -584,9 +652,77 @@ export class TrackMap {
       const isSelected = String(driverNumber) === activeSelectedDriver;
       const isHovered = String(driverNumber) === this.hoveredDriver;
 
+      // Event Check: Pit & Battle
+      const isPit = this.checkIfInPit(driverNumber, timestamp);
+      if (isPit) this.drawVisualPulse(x, y, "#f1c40f", timestamp);
+
       this.driverMarkers.set(String(driverNumber), { x, y });
       this.drawDriverMarker(x, y, teamColor, acronym, isSelected || isHovered);
+
+      if (isSelected) {
+          this.drawMiniDashboard(x, y, acronym, teamColor, timestamp);
+      }
     }
+  }
+
+  drawMiniDashboard(x, y, acronym, teamColor, timestamp) {
+      const telemetry = telemetryService.getDriverTelemetry(store.selectedDriver, timestamp);
+      if (!telemetry) return;
+
+      const width = 110;
+      const height = 65;
+      const dx = x + 20;
+      const dy = y - 90;
+
+      this.ctx.save();
+      this.ctx.beginPath();
+      this.ctx.fillStyle = "rgba(10, 10, 15, 0.95)";
+      this.ctx.strokeStyle = teamColor;
+      this.ctx.lineWidth = 2;
+      this.ctx.shadowColor = "rgba(0,0,0,0.5)";
+      this.ctx.shadowBlur = 10;
+      this.roundRect(dx, dy, width, height, 4);
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Header: Nama Pembalap di dalam Dashboard agar tidak hilang
+      this.ctx.fillStyle = teamColor;
+      this.ctx.font = "900 12px Formula1";
+      this.ctx.fillText(acronym, dx + 10, dy + 20);
+
+      this.ctx.fillStyle = "#ffffff";
+      this.ctx.font = "bold 13px Titillium Web";
+      this.ctx.fillText(`${Math.round(telemetry.speed || 0)} KM/H`, dx + 10, dy + 40);
+      
+      this.ctx.font = "800 11px Formula1";
+      this.ctx.fillStyle = "rgba(255,255,255,0.7)";
+      const gearValue = telemetry.n_gear !== undefined ? Math.round(telemetry.n_gear) : 'N';
+      this.ctx.fillText(`GEAR ${gearValue === 0 ? 'N' : gearValue}`, dx + 10, dy + 55);
+      
+      this.ctx.restore();
+  }
+
+  checkIfInPit(driverNum, timestamp) {
+      const allPits = store.raceData?.pit || [];
+      const absTime = (store.playback.startTime || 0) + timestamp;
+      return allPits.some(p => {
+          if (String(p.driver_number) !== String(driverNum)) return false;
+          const entry = p.timestamp;
+          const exit = entry + ((p.pit_duration || 0) * 1000);
+          return absTime >= entry && absTime <= exit;
+      });
+  }
+
+  drawVisualPulse(x, y, color, timestamp) {
+      const pulseSize = (timestamp % 1000) / 1000 * 40;
+      this.ctx.save();
+      this.ctx.beginPath();
+      this.ctx.strokeStyle = color;
+      this.ctx.lineWidth = 2;
+      this.ctx.globalAlpha = 1 - (pulseSize / 40);
+      this.ctx.arc(x, y, pulseSize, 0, Math.PI * 2);
+      this.ctx.stroke();
+      this.ctx.restore();
   }
 
   drawDriverMarker(x, y, teamColor, acronym, isSelected) {
