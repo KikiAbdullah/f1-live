@@ -316,7 +316,8 @@ export class Leaderboard {
       this.currentLeader = newLeader;
     }
 
-    const selectedDriver = String(store.ui?.selectedDriver ?? store.selectedDriver ?? "");
+    const selectedDriver = store.ui?.selectedDriver ?? store.selectedDriver;
+    const selectedDriverStr = selectedDriver ? String(selectedDriver) : "";
 
     if (positions.length === 0) {
       this.listElement.innerHTML = `<div class="leaderboard-empty">No position data available</div>`;
@@ -331,16 +332,16 @@ export class Leaderboard {
           const pos = p.position || index + 1;
           const interval = index === 0 ? "Interval" : (p.interval || "+0.000s");
           const compound = p.tyre_compound ? p.tyre_compound.charAt(0).toUpperCase() : "S";
-          const pitText = p.inPit ? (p.pitStopDuration ? `P ${parseFloat(p.pitStopDuration).toFixed(0)}s` : "PIT") : "";
+          const pitText = p.inPit ? (p.pitStopDuration ? `${parseFloat(p.pitStopDuration).toFixed(1)}s` : "PIT") : "";
 
           return `
-                    <div class="leaderboard-row ${String(driverNumber) === selectedDriver ? "selected" : ""} ${p.inPit ? "in-pit" : ""} ${p.status === "Retired" ? "out" : ""}"
+                    <div class="leaderboard-row ${String(driverNumber) === selectedDriverStr ? "selected" : ""} ${p.inPit ? "in-pit" : ""} ${p.status === "Retired" ? "out" : ""}"
                          data-driver-number="${driverNumber}"
                          data-pos="${pos}">
                         <div class="lb-pos">${pos}</div>
                         <div class="lb-team-color" style="background-color: #${p.team_colour || '777777'}"></div>
                         <div class="lb-name">${p.name_acronym || "???"}</div>
-                        <div class="lb-gap">${p.inPit ? `<span class="lb-pit-indicator">${pitText}</span>` : interval}</div>
+                        <div class="lb-gap">${p.inPit ? `<span class="lb-pit-indicator">PIT ${pitText}</span>` : interval}</div>
                         <div class="lb-tyre tyre-${compound}">${compound}</div>
                     </div>
                 `;
@@ -356,8 +357,8 @@ export class Leaderboard {
         colorEl: el.querySelector(".lb-team-color"),
       }));
 
-      if (selectedDriver) {
-          this.renderInlineTelemetry(selectedDriver);
+      if (selectedDriverStr) {
+          this.renderInlineTelemetry(selectedDriverStr);
       } else {
           this.recalculateRowPositions();
       }
@@ -378,14 +379,22 @@ export class Leaderboard {
       const intervalText = isLeader ? "Interval" : String(p.interval || "+0.000s");
       const pos = p.position || index + 1;
       const compound = p.tyre_compound ? p.tyre_compound.charAt(0).toUpperCase() : "S";
-      const isSelected = String(driverNumber) === selectedDriver;
-      const pitText = p.inPit ? (p.pitStopDuration ? `PIT ${parseFloat(p.pitStopDuration).toFixed(1)}s` : "PIT") : "";
+      const isSelected = driverNumber === selectedDriverStr;
+      
+      // FIX: Gunakan pitText yang konsisten antara render pertama dan update
+      const pitText = p.inPit ? (p.pitStopDuration ? `${parseFloat(p.pitStopDuration).toFixed(1)}s` : "PIT") : "";
 
       cache.el.style.transform = `translateY(${currentY}px)`;
       currentY += rowHeight;
 
       if (isSelected) {
-          const telCont = this.listElement.querySelector(".inline-telemetry");
+          let telCont = this.listElement.querySelector(".inline-telemetry");
+          if (!telCont) {
+              // Jika isSelected tapi telemetry belum ada (misal baru diklik), render
+              this.renderInlineTelemetry(driverNumber);
+              telCont = this.listElement.querySelector(".inline-telemetry");
+          }
+          
           if (telCont) {
               telCont.style.transform = `translateY(${currentY}px)`;
               currentY += telHeight;
@@ -399,7 +408,8 @@ export class Leaderboard {
 
       if (cache.posEl.textContent !== String(pos)) cache.posEl.textContent = pos;
       
-      const displayGap = p.inPit ? `<span class="lb-pit-indicator">${pitText}</span>` : intervalText;
+      // FIX: Kembalikan tampilan interval jika tidak sedang di PIT
+      const displayGap = p.inPit ? `<span class="lb-pit-indicator">PIT ${pitText}</span>` : intervalText;
       if (cache.gapEl.innerHTML !== displayGap) cache.gapEl.innerHTML = displayGap;
 
       if (cache.tyreEl && cache.tyreEl.textContent !== compound) {
